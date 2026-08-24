@@ -33,7 +33,9 @@ const client = new Client({
 // 2. ADIM: SONRA DEĞİŞKENLER VE KOMUTLAR YÜKLENİYOR
 client.commands = new Collection();
 client.userStats = new Map();       
+client.voiceSessions = new Map();   // Sesli oturum takibi
 client.levelChannelId = null;       
+client.welcomeChannelId = null;     
 const dbPath = './database.json';
 const configPath = './config.json';
 
