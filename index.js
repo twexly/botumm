@@ -85,7 +85,6 @@ for (const file of commandFiles) {
 // Bot Aktif Olduğunda
 client.once('ready', () => {
     console.log(`🚀 Bot aktif edildi: ${client.user.tag}`);
-    client.user.setActivity('Ryu ❤️ Wolflykia', { type: 4 }); // 4 = Custom
 });
 
 // SESLİ KANAL TAKİBİ VE LOG
