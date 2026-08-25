@@ -498,7 +498,7 @@ client.on('messageCreate', async (message) => {
                 ctx.fillStyle = '#f1c40f';
                 ctx.shadowColor = '#f1c40f';
                 ctx.shadowBlur = 10;
-                ctx.fillText('✨ TEBRİKLER! (SEVİYE ATLADIN)', 230, 85);
+                ctx.fillText('★ TEBRİKLER! (SEVİYE ATLADIN)', 230, 85);
                 ctx.shadowBlur = 0;
 
                 ctx.font = 'bold 36px sans-serif';

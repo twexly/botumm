@@ -15,6 +15,40 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.closePath();
 }
 
+function drawChatIcon(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.2, size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.4, size * 0.3);
+    ctx.lineTo(-size * 0.9, size * 0.8);
+    ctx.lineTo(-size * 0.05, size * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawMicIcon(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = size * 0.22;
+    drawRoundRect(ctx, -size * 0.35, -size * 0.85, size * 0.7, size * 1.0, size * 0.35);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.2, size * 0.65, 0, Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, size * 0.45);
+    ctx.lineTo(0, size * 0.85);
+    ctx.stroke();
+    ctx.restore();
+}
+
 module.exports = {
     name: 'rank',
     async execute(message, client, args) {
@@ -148,11 +182,14 @@ module.exports = {
             ctx.fillStyle = '#8e9297';
             ctx.fillText(`@${user.username}`, 215, 92);
 
-            // İstatistikler Satırı
+            // İstatistikler Satırı (Vektör İkonlar ile)
+            drawChatIcon(ctx, 226, 140, 11, '#38bdf8');
             ctx.font = 'bold 18px sans-serif';
             ctx.fillStyle = '#e2e8f0';
-            ctx.fillText('💬 ' + (stats.messages || 0).toLocaleString('tr-TR') + ' Mesaj', 215, 145);
-            ctx.fillText('🎙️ ' + voiceHours + ' Saat Ses', 430, 145);
+            ctx.fillText((stats.messages || 0).toLocaleString('tr-TR') + ' Mesaj', 246, 145);
+
+            drawMicIcon(ctx, 420, 138, 11, '#a78bfa');
+            ctx.fillText(voiceHours + ' Saat Ses', 438, 145);
 
             // XP İlerleme Çubuğu (Progress Bar)
             const barX = 215;
