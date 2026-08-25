@@ -33,60 +33,30 @@ function drawHeart(ctx, x, y, size, color) {
 module.exports = {
     name: 'ship',
     async execute(message, client, args) {
-        const SPECIAL_USER_1 = '865237567910051900';
-        const SPECIAL_USER_2 = '1524366537597915197';
-
         let targetUser = null;
-        let matchPercent = 0;
+        const mentioned = message.mentions.members.first();
 
-        // --- ÖZEL EŞLEŞME FİLTRESİ ---
-        if (message.author.id === SPECIAL_USER_1) {
+        if (mentioned) {
+            targetUser = mentioned.user;
+        } else {
             try {
-                const fetchedMember = await message.guild.members.fetch(SPECIAL_USER_2).catch(() => null);
-                targetUser = fetchedMember ? fetchedMember.user : await client.users.fetch(SPECIAL_USER_2).catch(() => null);
-            } catch (e) {}
-            matchPercent = 100;
-        } else if (message.author.id === SPECIAL_USER_2) {
-            try {
-                const fetchedMember = await message.guild.members.fetch(SPECIAL_USER_1).catch(() => null);
-                targetUser = fetchedMember ? fetchedMember.user : await client.users.fetch(SPECIAL_USER_1).catch(() => null);
-            } catch (e) {}
-            matchPercent = 100;
-        }
-
-        // Eğer özel filtre tetiklenmediyse normal akış
-        if (!targetUser) {
-            const mentioned = message.mentions.members.first();
-            if (mentioned) {
-                targetUser = mentioned.user;
-            } else {
-                try {
-                    const members = await message.guild.members.fetch();
-                    const validMembers = members.filter(m => !m.user.bot && m.id !== message.author.id);
-                    if (validMembers.size === 0) {
-                        return message.reply("❌ Sunucuda eşleşebileceğin kimse yok!");
-                    }
-                    targetUser = validMembers.random().user;
-                } catch(e) {
-                    return message.reply("❌ Kullanıcılar çekilemedi!");
+                const members = await message.guild.members.fetch();
+                const validMembers = members.filter(m => !m.user.bot && m.id !== message.author.id);
+                if (validMembers.size === 0) {
+                    return message.reply("❌ Sunucuda eşleşebileceğin kimse yok!");
                 }
-            }
-
-            // Kendini etiketleme kontrolü
-            if (targetUser.id === message.author.id) {
-                return message.reply("❌ Kendini shipleyemezsin, biraz sosyalleş!");
-            }
-
-            // Eğer manuel olarak özel kullanıcılar birbiriyle shiplendiyse %100 yap
-            if (
-                (message.author.id === SPECIAL_USER_1 && targetUser.id === SPECIAL_USER_2) ||
-                (message.author.id === SPECIAL_USER_2 && targetUser.id === SPECIAL_USER_1)
-            ) {
-                matchPercent = 100;
-            } else {
-                matchPercent = Math.floor(Math.random() * 101);
+                targetUser = validMembers.random().user;
+            } catch(e) {
+                return message.reply("❌ Kullanıcılar çekilemedi!");
             }
         }
+
+        // Kendini etiketleme kontrolü
+        if (targetUser.id === message.author.id) {
+            return message.reply("❌ Kendini shipleyemezsin, biraz sosyalleş!");
+        }
+
+        const matchPercent = Math.floor(Math.random() * 101);
 
         const user1 = message.author;
         const user2 = targetUser;

@@ -58,6 +58,7 @@ const client = new Client({
 client.commands = new Collection();
 client.userStats = new Map();       
 client.voiceSessions = new Map();   // Sesli oturum takibi
+client.xpCooldowns = new Map();     // XP kazanma bekleme süresi
 client.levelChannelId = null;       
 client.welcomeChannelId = null;     
 const dbPath = './database.json';
@@ -360,106 +361,191 @@ client.on('messageCreate', async (message) => {
     }
 
     if (message.content.startsWith('!') || message.content.startsWith('.')) {
-        const prefixLength = message.content.startsWith('!') ? 1 : 1;
-        const args = message.content.slice(prefixLength).trim().split(/ +/);
+        const prefix = message.content[0];
+        const rawContent = message.content.slice(1).trim();
+        if (!rawContent) return; // Sadece "!" veya "." yazıldıysa işlem yapma
+
+        const args = rawContent.split(/ +/);
         const commandName = args.shift().toLowerCase();
 
         const command = client.commands.get(commandName);
-        if (command) {
-            // Yetki kontrolü (sadece 1541337917467795478 ID'li rol)
-            if (command.modOnly) {
-                if (!message.member.roles.cache.has('1541337917467795478')) {
-                    return message.reply("❌ Bu komutu kullanmak için gerekli moderatör rolüne sahip değilsin!");
-                }
-                // Mod Log
-                if (client.serverConfig.modLog) {
-                    const modLog = client.channels.cache.get(client.serverConfig.modLog);
-                    if (modLog) {
-                        const timestamp = Math.floor(Date.now() / 1000);
-                        const container = new ContainerBuilder()
-                            .setAccentColor(0x9b59b6)
-                            .addTextDisplayComponents(
-                                new TextDisplayBuilder().setContent('## 🛡️ Moderatör Komut İşlemi'),
-                                new TextDisplayBuilder().setContent(
-                                    `👤 **Yetkili:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)\n` +
-                                    `📁 **Kanal:** ${message.channel} (\`${message.channel.name}\`)\n` +
-                                    `⚡ **Kullanılan Komut:** \`${message.content}\`\n` +
-                                    `⏰ **Zaman:** <t:${timestamp}:F> (<t:${timestamp}:R>)`
-                                )
-                            );
-                        modLog.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => {});
-                    }
+        if (!command) {
+            // Bilinmeyen / Eksik yazılan komut için bilgilendirme mesajı
+            const reply = await message.reply(`❓ **${prefix}${commandName}** adında bir komut bulunamadı!\n💡 Kullanabileceğin komutlar: \`${prefix}rank\`, \`${prefix}toplevel\`, \`${prefix}ship\`, \`${prefix}ai\` vb.`);
+            setTimeout(() => reply.delete().catch(() => {}), 6000);
+            return;
+        }
+
+        // Yetki kontrolü (sadece 1541337917467795478 ID'li rol)
+        if (command.modOnly) {
+            if (!message.member.roles.cache.has('1541337917467795478')) {
+                const reply = await message.reply("❌ Bu komutu kullanmak için gerekli moderatör rolüne sahip değilsin!");
+                setTimeout(() => reply.delete().catch(() => {}), 6000);
+                return;
+            }
+            // Mod Log
+            if (client.serverConfig.modLog) {
+                const modLog = client.channels.cache.get(client.serverConfig.modLog);
+                if (modLog) {
+                    const timestamp = Math.floor(Date.now() / 1000);
+                    const container = new ContainerBuilder()
+                        .setAccentColor(0x9b59b6)
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent('## 🛡️ Moderatör Komut İşlemi'),
+                            new TextDisplayBuilder().setContent(
+                                `👤 **Yetkili:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)\n` +
+                                `📁 **Kanal:** ${message.channel} (\`${message.channel.name}\`)\n` +
+                                `⚡ **Kullanılan Komut:** \`${message.content}\`\n` +
+                                `⏰ **Zaman:** <t:${timestamp}:F> (<t:${timestamp}:R>)`
+                            )
+                        );
+                    modLog.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => {});
                 }
             }
-            return command.execute(message, client, args);
         }
+        return command.execute(message, client, args);
     }
 
+    // --- GELİŞMİŞ LEVEL / XP SİSTEMİ ---
     const userId = message.author.id;
     const stats = client.userStats.get(userId) || { xp: 0, level: 1, messages: 0, voiceTime: 0 };
+    stats.messages = (stats.messages || 0) + 1;
 
-    const xpToAdd = Math.floor(Math.random() * 10) + 15;
-    stats.xp += xpToAdd;
-    stats.messages += 1;
+    // XP Kazanımı (Kullanıcı başına 45 saniye bekleme süresi - Spam koruması)
+    const now = Date.now();
+    const lastXP = client.xpCooldowns.get(userId) || 0;
 
-    const xpNeeded = stats.level * 100;
+    if (now - lastXP > 45000) {
+        client.xpCooldowns.set(userId, now);
+        const xpToAdd = Math.floor(Math.random() * 11) + 15; // 15-25 XP
+        stats.xp = (stats.xp || 0) + xpToAdd;
+    }
 
-    if (stats.xp >= xpNeeded) {
-        stats.level += 1;
-        stats.xp -= xpNeeded; 
+    // Seviye Atlama Formülü: (level * 150 + 50) XP gerekir
+    const getNeededXP = (lvl) => lvl * 150 + 50;
 
-        if (client.levelChannelId) {
-            const levelChannel = client.channels.cache.get(client.levelChannelId);
-            
-            if (levelChannel) {
+    let leveledUp = false;
+    while (stats.xp >= getNeededXP(stats.level)) {
+        stats.xp -= getNeededXP(stats.level);
+        stats.level = (stats.level || 1) + 1;
+        leveledUp = true;
+    }
+
+    if (leveledUp) {
+        const targetChannel = (client.levelChannelId && client.channels.cache.get(client.levelChannelId)) || message.channel;
+        if (targetChannel) {
+            try {
+                // --- 900x260 YÜKSEK KALİTELİ NEON LEVEL-UP KARTI ---
+                const canvas = createCanvas(900, 260);
+                const ctx = canvas.getContext('2d');
+
+                // 1. Şeffaf Köşeler
+                drawRoundRect(ctx, 0, 0, 900, 260, 28);
+                ctx.clip();
+
+                // 2. Arka Plan Gradyanı
+                const bgGrad = ctx.createLinearGradient(0, 0, 900, 260);
+                bgGrad.addColorStop(0, '#150921');
+                bgGrad.addColorStop(0.5, '#260f3d');
+                bgGrad.addColorStop(1, '#0e0517');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, 900, 260);
+
+                // Işık Efektleri
+                ctx.fillStyle = 'rgba(241, 196, 15, 0.1)';
+                ctx.beginPath(); ctx.arc(130, 130, 90, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'rgba(155, 89, 182, 0.15)';
+                ctx.beginPath(); ctx.arc(750, 130, 100, 0, Math.PI*2); ctx.fill();
+
+                // Dış İnce Çerçeve
+                ctx.strokeStyle = 'rgba(241, 196, 15, 0.3)';
+                ctx.lineWidth = 3;
+                drawRoundRect(ctx, 2, 2, 896, 256, 26);
+                ctx.stroke();
+
+                // 3. Avatar
+                const avX = 130, avY = 130, avRadius = 65;
                 try {
-                    // --- YENİ KALİTELİ LEVEL UP GÖRSELİ ---
-                    const canvas = createCanvas(1400, 500);
-                    const ctx = canvas.getContext('2d');
-
-                    const radius = 60;
-                    const padding = 20;
-
-                    // Dış Çerçeve ve Arka Plan
+                    const avatarURL = message.author.displayAvatarURL({ extension: 'png', size: 256 });
+                    const avatar = await loadImage(avatarURL);
+                    ctx.save();
                     ctx.beginPath();
-                    ctx.moveTo(padding + radius, padding);
-                    ctx.lineTo(canvas.width - padding - radius, padding);
-                    ctx.quadraticCurveTo(canvas.width - padding, padding, canvas.width - padding, padding + radius);
-                    ctx.lineTo(canvas.width - padding, canvas.height - padding - radius);
-                    ctx.quadraticCurveTo(canvas.width - padding, canvas.height - padding, canvas.width - padding - radius, canvas.height - padding);
-                    ctx.lineTo(padding + radius, canvas.height - padding);
-                    ctx.quadraticCurveTo(padding, canvas.height - padding, padding, canvas.height - padding - radius);
-                    ctx.lineTo(padding, padding + radius);
-                    ctx.quadraticCurveTo(padding, padding, padding + radius, padding);
+                    ctx.arc(avX, avY, avRadius, 0, Math.PI * 2);
                     ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(avatar, avX - avRadius, avY - avRadius, avRadius * 2, avRadius * 2);
+                    ctx.restore();
+                } catch (e) {}
 
-                    ctx.fillStyle = '#1e1f22'; // Daha koyu ve modern bir arka plan
-                    ctx.fill();
+                // Avatar Glow & Halka
+                ctx.beginPath();
+                ctx.arc(avX, avY, avRadius + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(241, 196, 15, 0.4)';
+                ctx.lineWidth = 8;
+                ctx.stroke();
 
-                    ctx.strokeStyle = '#f1c40f'; // Altın sarısı dış çerçeve
-                    ctx.lineWidth = 15;
-                    ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(avX, avY, avRadius + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 4;
+                ctx.stroke();
 
-                    // Yıldız veya Ekstra Süsleme (Level atlama ruhunu vermek için küçük şık bir süs)
-                    ctx.font = 'bold 90px sans-serif';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.textAlign = 'center';
-                    const username = message.author.username;
-                    ctx.fillText(`Tebrikler ${username}!`, canvas.width / 2, 200);
-                    
-                    ctx.font = 'bold 110px sans-serif';
-                    ctx.fillStyle = '#f1c40f'; // Altın sarısı
-                    ctx.fillText(`${stats.level}. SEVİYE`, canvas.width / 2, 360);
+                // 4. Tebrik Metinleri
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
 
-                    const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'level-up.png' });
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillStyle = '#f1c40f';
+                ctx.shadowColor = '#f1c40f';
+                ctx.shadowBlur = 10;
+                ctx.fillText('✨ TEBRİKLER! (SEVİYE ATLADIN)', 230, 85);
+                ctx.shadowBlur = 0;
 
-                    await levelChannel.send({ 
-                        content: `🎉 <@${userId}> yeni bir seviyeye ulaştı!`, 
-                        files: [attachment] 
-                    });
-                } catch (err) {
-                    console.error("Canvas oluşturulurken hata:", err);
+                ctx.font = 'bold 36px sans-serif';
+                ctx.fillStyle = '#ffffff';
+                const userDisplay = message.member?.displayName || message.author.globalName || message.author.username;
+                let fittedUser = userDisplay;
+                while (ctx.measureText(fittedUser).width > 380 && fittedUser.length > 3) {
+                    fittedUser = fittedUser.slice(0, -1);
                 }
+                if (fittedUser !== userDisplay) fittedUser += '...';
+                ctx.fillText(fittedUser, 230, 135);
+
+                ctx.font = '19px sans-serif';
+                ctx.fillStyle = '#c4b5fd';
+                ctx.fillText('Harika gidiyorsun! Yeni seviyene ulaştın.', 230, 180);
+
+                // 5. Sağ Bölüm: Dev Seviye Rozeti
+                const badgeX = 740;
+                const badgeY = 130;
+
+                drawRoundRect(ctx, badgeX - 85, badgeY - 75, 170, 150, 24);
+                ctx.fillStyle = 'rgba(241, 196, 15, 0.12)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(241, 196, 15, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillText('YENİ SEVİYE', badgeX, badgeY - 30);
+
+                ctx.font = 'bold 64px sans-serif';
+                ctx.fillStyle = '#f1c40f';
+                ctx.shadowColor = '#f1c40f';
+                ctx.shadowBlur = 16;
+                ctx.fillText(stats.level.toString(), badgeX, badgeY + 42);
+                ctx.shadowBlur = 0;
+
+                const attachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'level-up.png' });
+
+                await targetChannel.send({ 
+                    content: `🎉 ${message.author} yeni bir seviyeye ulaştı! **(Seviye ${stats.level})**`, 
+                    files: [attachment] 
+                });
+            } catch (err) {
+                console.error("Level up canvas hatası:", err);
             }
         }
     }
