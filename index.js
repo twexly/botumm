@@ -1,6 +1,24 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // SSL Hatası için eklemiştik
 
-const { Client, GatewayIntentBits, Collection, AttachmentBuilder, ContainerBuilder, TextDisplayBuilder, MessageFlags, AuditLogEvent } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    Collection, 
+    AttachmentBuilder, 
+    ContainerBuilder, 
+    TextDisplayBuilder, 
+    MessageFlags, 
+    AuditLogEvent,
+    ChannelType,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    UserSelectMenuBuilder
+} = require('discord.js');
 const fs = require('fs');
 const { createCanvas } = require('canvas');
 require('dotenv').config();
@@ -58,6 +76,7 @@ const client = new Client({
 client.commands = new Collection();
 client.userStats = new Map();       
 client.voiceSessions = new Map();   // Sesli oturum takibi
+client.customVoiceRooms = new Map(); // Özel ses odaları takibi
 client.xpCooldowns = new Map();     // XP kazanma bekleme süresi
 client.levelChannelId = null;       
 client.welcomeChannelId = null;     
@@ -112,10 +131,60 @@ client.once('ready', () => {
     console.log(`🚀 Bot aktif edildi: ${client.user.tag}`);
 });
 
-// SESLİ KANAL TAKİBİ VE LOG
-client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState.member.user.bot) return;
-    const userId = newState.member.id;
+// SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
+client.on('voiceStateUpdate', async (oldState, newState) => {
+    if (newState.member?.user?.bot) return;
+    const userId = newState.member?.id;
+
+    // --- ÖZEL ODA (JOIN-TO-CREATE) SİSTEMİ ---
+    if (client.serverConfig.customVoiceChannel && newState.channelId === client.serverConfig.customVoiceChannel) {
+        try {
+            const guild = newState.guild;
+            const categoryId = client.serverConfig.customVoiceCategory;
+            const userRoom = await guild.channels.create({
+                name: `${newState.member.displayName} Odası`,
+                type: ChannelType.GuildVoice,
+                parent: categoryId || undefined,
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        allow: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.ViewChannel]
+                    },
+                    {
+                        id: newState.member.id,
+                        allow: [
+                            PermissionFlagsBits.Connect,
+                            PermissionFlagsBits.Speak,
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.MoveMembers,
+                            PermissionFlagsBits.MuteMembers,
+                            PermissionFlagsBits.DeafenMembers,
+                            PermissionFlagsBits.ManageChannels
+                        ]
+                    }
+                ]
+            });
+
+            client.customVoiceRooms.set(userRoom.id, {
+                ownerId: newState.member.id,
+                channelId: userRoom.id,
+                lock: false
+            });
+
+            await newState.setChannel(userRoom);
+        } catch (err) {
+            console.error("Özel oda oluşturma hatası:", err);
+        }
+    }
+
+    // --- BOŞALAN ÖZEL ODALARI OTOMATİK SİLME ---
+    if (oldState.channelId && client.customVoiceRooms.has(oldState.channelId)) {
+        const customChannel = oldState.guild.channels.cache.get(oldState.channelId);
+        if (customChannel && customChannel.members.size === 0) {
+            client.customVoiceRooms.delete(oldState.channelId);
+            customChannel.delete().catch(() => {});
+        }
+    }
 
     // Kanala giriş
     if (!oldState.channelId && newState.channelId) {
@@ -123,7 +192,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
         sendLog(client, 'Sesli Kanala Katıldı', [
             `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
             `**Katıldığı Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
-        ], 0x2ecc71);
+        ]);
     } 
     // Kanaldan çıkış
     else if (oldState.channelId && !newState.channelId) {
@@ -142,7 +211,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
             `**Kullanıcı:** ${oldState.member.user} (\`${oldState.member.user.tag}\` - \`${userId}\`)`,
             `**Ayrıldığı Kanal:** \`${oldState.channel.name}\``,
             `**Seste Kalma Süresi:** \`${durationText}\``
-        ], 0xe74c3c);
+        ]);
     }
     // Kanal değiştirme
     else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
@@ -150,12 +219,12 @@ client.on('voiceStateUpdate', (oldState, newState) => {
             `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
             `**Eski Kanal:** \`${oldState.channel.name}\``,
             `**Yeni Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
-        ], 0x3498db);
+        ]);
     }
 });
 
-// LOG YARDIMCI FONKSİYONU (V2 COMPONENTS & DETAYLI FORMAT)
-async function sendLog(client, title, fields = [], color = 0x2b2d31) {
+// LOG YARDIMCI FONKSİYONU (RENKSİZ, MİNİMAL & V2 FORMAT)
+async function sendLog(client, title, fields = []) {
     if (!client.serverConfig || !client.serverConfig.serverLog) return;
     const logChannel = client.channels.cache.get(client.serverConfig.serverLog);
     if (!logChannel) return;
@@ -166,7 +235,6 @@ async function sendLog(client, title, fields = [], color = 0x2b2d31) {
         lines.push(`**İşlem Zamanı:** <t:${timestamp}:F> (<t:${timestamp}:R>)`);
 
         const container = new ContainerBuilder()
-            .setAccentColor(color)
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(`## ${title}`),
                 new TextDisplayBuilder().setContent(lines.join('\n'))
@@ -676,6 +744,244 @@ client.on('guildMemberAdd', async (member) => {
 
     } catch (err) {
         console.error("Welcome resmi oluşturulurken hata:", err);
+    }
+});
+
+// --- ÖZEL ODA ETKİLEŞİM YÖNETİCİSİ (BUTONLAR, MODALLAR VE SEÇİM MENÜLERİ) ---
+client.on('interactionCreate', async (interaction) => {
+    // 1. BUTON ETKİLEŞİMLERİ
+    if (interaction.isButton() && interaction.customId.startsWith('ozeloda_')) {
+        const userVoiceChannelId = interaction.member?.voice?.channelId;
+        const room = userVoiceChannelId ? client.customVoiceRooms.get(userVoiceChannelId) : null;
+
+        if (!room || room.ownerId !== interaction.user.id) {
+            return interaction.reply({
+                content: '❌ Bu işlemi gerçekleştirmek için sana ait olan bir özel ses kanalının içinde olmalısın!',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+        }
+
+        // İsim Değiştir Modal
+        if (interaction.customId === 'ozeloda_rename') {
+            const modal = new ModalBuilder()
+                .setCustomId('ozeloda_modal_rename')
+                .setTitle('Oda İsmini Değiştir');
+
+            const nameInput = new TextInputBuilder()
+                .setCustomId('room_name')
+                .setLabel('Yeni Oda İsmi')
+                .setStyle(TextInputStyle.Short)
+                .setValue(voiceChannel.name)
+                .setMaxLength(32)
+                .setRequired(true);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+            return interaction.showModal(modal);
+        }
+
+        // Kişi Limiti Modal
+        if (interaction.customId === 'ozeloda_limit') {
+            const modal = new ModalBuilder()
+                .setCustomId('ozeloda_modal_limit')
+                .setTitle('Kişi Limitini Ayarla');
+
+            const limitInput = new TextInputBuilder()
+                .setCustomId('room_limit')
+                .setLabel('Kişi Limiti (0 = Limitsiz, Max: 99)')
+                .setStyle(TextInputStyle.Short)
+                .setValue(voiceChannel.userLimit.toString())
+                .setMaxLength(2)
+                .setRequired(true);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(limitInput));
+            return interaction.showModal(modal);
+        }
+
+        // Oda Kilitle / Aç
+        if (interaction.customId === 'ozeloda_lock') {
+            const currentLock = room.lock || false;
+            const newLock = !currentLock;
+            room.lock = newLock;
+
+            await voiceChannel.permissionOverwrites.edit(interaction.guild.roles.everyone.id, {
+                Connect: newLock ? false : null
+            });
+
+            return interaction.reply({
+                content: newLock ? '🔒 Özel odanız kilitlendi! İzin verilmeyen kullanıcılar giremez.' : '🔓 Özel odanızın kilidi açıldı! Artık herkes katılabilir.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Kullanıcı At Menüsü
+        if (interaction.customId === 'ozeloda_kick') {
+            const select = new UserSelectMenuBuilder()
+                .setCustomId('ozeloda_select_kick')
+                .setPlaceholder('Odadan çıkartılacak kullanıcıyı seçin...')
+                .setMaxValues(1);
+
+            return interaction.reply({
+                content: '🚪 Lütfen odadan çıkartmak istediğiniz kullanıcıyı seçin:',
+                components: [new ActionRowBuilder().addComponents(select)],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Erişim Ver Menüsü
+        if (interaction.customId === 'ozeloda_allow') {
+            const select = new UserSelectMenuBuilder()
+                .setCustomId('ozeloda_select_allow')
+                .setPlaceholder('Giriş izni verilecek kullanıcıyı seçin...')
+                .setMaxValues(1);
+
+            return interaction.reply({
+                content: '➕ Lütfen odaya giriş izni vermek istediğiniz kullanıcıyı seçin:',
+                components: [new ActionRowBuilder().addComponents(select)],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Erişim Kaldır Menüsü
+        if (interaction.customId === 'ozeloda_deny') {
+            const select = new UserSelectMenuBuilder()
+                .setCustomId('ozeloda_select_deny')
+                .setPlaceholder('Giriş izni kaldırılacak kullanıcıyı seçin...')
+                .setMaxValues(1);
+
+            return interaction.reply({
+                content: '➖ Lütfen giriş iznini kaldırmak istediğiniz kullanıcıyı seçin:',
+                components: [new ActionRowBuilder().addComponents(select)],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Sahiplik Devret Menüsü
+        if (interaction.customId === 'ozeloda_transfer') {
+            const select = new UserSelectMenuBuilder()
+                .setCustomId('ozeloda_select_transfer')
+                .setPlaceholder('Oda sahipliğini devretmek istediğiniz kullanıcıyı seçin...')
+                .setMaxValues(1);
+
+            return interaction.reply({
+                content: '👑 Lütfen oda sahipliğini devretmek istediğiniz kullanıcıyı seçin:',
+                components: [new ActionRowBuilder().addComponents(select)],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Odayı Kapat
+        if (interaction.customId === 'ozeloda_delete') {
+            client.customVoiceRooms.delete(room.channelId);
+            await voiceChannel.delete().catch(() => {});
+            return interaction.reply({
+                content: '🗑️ Özel ses odanız başarıyla silindi.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+    }
+
+    // 2. MODAL YANITLARI
+    if (interaction.isModalSubmit()) {
+        const userVoiceChannelId = interaction.member?.voice?.channelId;
+        const room = userVoiceChannelId ? client.customVoiceRooms.get(userVoiceChannelId) : null;
+
+        if (!room || room.ownerId !== interaction.user.id) {
+            return interaction.reply({
+                content: '❌ Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın!',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+        }
+
+        if (interaction.customId === 'ozeloda_modal_rename') {
+            const newName = interaction.fields.getTextInputValue('room_name');
+            await voiceChannel.setName(newName);
+            return interaction.reply({ content: `✅ Oda ismi **${newName}** olarak güncellendi!`, flags: MessageFlags.Ephemeral });
+        }
+
+        if (interaction.customId === 'ozeloda_modal_limit') {
+            const limitStr = interaction.fields.getTextInputValue('room_limit');
+            const limit = parseInt(limitStr);
+            if (isNaN(limit) || limit < 0 || limit > 99) {
+                return interaction.reply({ content: '❌ Lütfen 0 ile 99 arasında bir sayı girin!', flags: MessageFlags.Ephemeral });
+            }
+            await voiceChannel.setUserLimit(limit);
+            return interaction.reply({ content: `✅ Oda limiti **${limit === 0 ? 'Limitsiz' : limit}** olarak ayarlandı!`, flags: MessageFlags.Ephemeral });
+        }
+    }
+
+    // 3. USER SELECT MENU YANITLARI
+    if (interaction.isUserSelectMenu()) {
+        const userVoiceChannelId = interaction.member?.voice?.channelId;
+        const room = userVoiceChannelId ? client.customVoiceRooms.get(userVoiceChannelId) : null;
+
+        if (!room || room.ownerId !== interaction.user.id) {
+            return interaction.reply({
+                content: '❌ Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın!',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+        }
+
+        const targetUserId = interaction.values[0];
+
+        if (interaction.customId === 'ozeloda_select_kick') {
+            const targetMember = voiceChannel.members.get(targetUserId);
+            if (targetMember) await targetMember.voice.disconnect().catch(() => {});
+            await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: false });
+            return interaction.update({
+                content: `🚪 <@${targetUserId}> kullanıcısı odadan atıldı ve girişi engellendi.`,
+                components: []
+            });
+        }
+
+        if (interaction.customId === 'ozeloda_select_allow') {
+            await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: true, ViewChannel: true });
+            return interaction.update({
+                content: `➕ <@${targetUserId}> kullanıcısına odaya giriş izni verildi.`,
+                components: []
+            });
+        }
+
+        if (interaction.customId === 'ozeloda_select_deny') {
+            const targetMember = voiceChannel.members.get(targetUserId);
+            if (targetMember) await targetMember.voice.disconnect().catch(() => {});
+            await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: false });
+            return interaction.update({
+                content: `➖ <@${targetUserId}> kullanıcısının odaya giriş izni kaldırıldı.`,
+                components: []
+            });
+        }
+
+        if (interaction.customId === 'ozeloda_select_transfer') {
+            room.ownerId = targetUserId;
+            await voiceChannel.permissionOverwrites.edit(targetUserId, {
+                Connect: true,
+                Speak: true,
+                ViewChannel: true,
+                MoveMembers: true,
+                MuteMembers: true,
+                DeafenMembers: true,
+                ManageChannels: true
+            });
+            return interaction.update({
+                content: `👑 Oda sahipliği başarıyla <@${targetUserId}> kullanıcısına devredildi!`,
+                components: []
+            });
+        }
     }
 });
 
