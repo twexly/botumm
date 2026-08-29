@@ -120,9 +120,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     // Kanala giriş
     if (!oldState.channelId && newState.channelId) {
         client.voiceSessions.set(userId, Date.now());
-        sendLog(client, '🔊 Sesli Kanala Katıldı', [
-            `👤 **Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
-            `🔊 **Katıldığı Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
+        sendLog(client, 'Sesli Kanala Katıldı', [
+            `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
+            `**Katıldığı Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
         ], 0x2ecc71);
     } 
     // Kanaldan çıkış
@@ -138,18 +138,18 @@ client.on('voiceStateUpdate', (oldState, newState) => {
             client.voiceSessions.delete(userId);
             durationText = formatDuration(duration);
         }
-        sendLog(client, '🔈 Sesli Kanaldan Ayrıldı', [
-            `👤 **Kullanıcı:** ${oldState.member.user} (\`${oldState.member.user.tag}\` - \`${userId}\`)`,
-            `🔈 **Ayrıldığı Kanal:** \`${oldState.channel.name}\``,
-            `⏳ **Seste Kalma Süresi:** \`${durationText}\``
+        sendLog(client, 'Sesli Kanaldan Ayrıldı', [
+            `**Kullanıcı:** ${oldState.member.user} (\`${oldState.member.user.tag}\` - \`${userId}\`)`,
+            `**Ayrıldığı Kanal:** \`${oldState.channel.name}\``,
+            `**Seste Kalma Süresi:** \`${durationText}\``
         ], 0xe74c3c);
     }
     // Kanal değiştirme
     else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-        sendLog(client, '🔁 Sesli Kanal Değiştirdi', [
-            `👤 **Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
-            `🔴 **Eski Kanal:** \`${oldState.channel.name}\``,
-            `🟢 **Yeni Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
+        sendLog(client, 'Sesli Kanal Değiştirdi', [
+            `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
+            `**Eski Kanal:** \`${oldState.channel.name}\``,
+            `**Yeni Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
         ], 0x3498db);
     }
 });
@@ -163,7 +163,7 @@ async function sendLog(client, title, fields = [], color = 0x2b2d31) {
     try {
         const timestamp = Math.floor(Date.now() / 1000);
         const lines = Array.isArray(fields) ? [...fields] : [fields];
-        lines.push(`⏰ **İşlem Zamanı:** <t:${timestamp}:F> (<t:${timestamp}:R>)`);
+        lines.push(`**İşlem Zamanı:** <t:${timestamp}:F> (<t:${timestamp}:R>)`);
 
         const container = new ContainerBuilder()
             .setAccentColor(color)
@@ -181,31 +181,31 @@ async function sendLog(client, title, fields = [], color = 0x2b2d31) {
 client.on('messageDelete', async message => {
     if (message.author?.bot) return;
     const executor = await getAuditExecutor(message.guild, AuditLogEvent.MessageDelete, message.author?.id);
-    sendLog(client, '🗑️ Mesaj Silindi', [
-        `👤 **Mesaj Sahibi:** ${message.author} (\`${message.author?.tag}\` - \`${message.author?.id}\`)`,
-        `🛡️ **Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Kullanıcının Kendisi / Bilinmiyor'}`,
-        `📁 **Kanal:** ${message.channel} (\`${message.channel?.name}\`)`,
-        `💬 **Silinen İçerik:**\n> ${message.content || '[İçerik Yok Veya Medya]'}`
+    sendLog(client, 'Mesaj Silindi', [
+        `**Mesaj Sahibi:** ${message.author} (\`${message.author?.tag}\` - \`${message.author?.id}\`)`,
+        `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Kullanıcının Kendisi / Bilinmiyor'}`,
+        `**Kanal:** ${message.channel} (\`${message.channel?.name}\`)`,
+        `**Silinen İçerik:**\n> ${message.content || '[İçerik Yok Veya Medya]'}`
     ], 0xe74c3c);
 });
 
 client.on('messageUpdate', (oldMessage, newMessage) => {
     if (oldMessage.author?.bot || oldMessage.content === newMessage.content) return;
-    sendLog(client, '✏️ Mesaj Düzenlendi', [
-        `👤 **Mesaj Sahibi:** ${newMessage.author} (\`${newMessage.author?.tag}\` - \`${newMessage.author?.id}\`)`,
-        `📁 **Kanal:** ${newMessage.channel} (\`${newMessage.channel?.name}\`)`,
-        `🔗 **Mesaj Bağlantısı:** [Mesaja Git](${newMessage.url})`,
-        `🔴 **Eski İçerik:**\n> ${oldMessage.content || '[Yok]'}`,
-        `🟢 **Yeni İçerik:**\n> ${newMessage.content || '[Yok]'}`
+    sendLog(client, 'Mesaj Düzenlendi', [
+        `**Mesaj Sahibi:** ${newMessage.author} (\`${newMessage.author?.tag}\` - \`${newMessage.author?.id}\`)`,
+        `**Kanal:** ${newMessage.channel} (\`${newMessage.channel?.name}\`)`,
+        `**Mesaj Bağlantısı:** [Mesaja Git](${newMessage.url})`,
+        `**Eski İçerik:**\n> ${oldMessage.content || '[Yok]'}`,
+        `**Yeni İçerik:**\n> ${newMessage.content || '[Yok]'}`
     ], 0xf1c40f);
 });
 
 client.on('guildMemberAdd', member => {
     const createdTimestamp = Math.floor(member.user.createdTimestamp / 1000);
-    sendLog(client, '📥 Sunucuya Yeni Üye Katıldı', [
-        `👤 **Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
-        `📅 **Hesap Oluşturulma:** <t:${createdTimestamp}:F> (<t:${createdTimestamp}:R>)`,
-        `👥 **Güncel Sunucu Üye Sayısı:** \`${member.guild.memberCount}\``
+    sendLog(client, 'Sunucuya Yeni Üye Katıldı', [
+        `**Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
+        `**Hesap Oluşturulma:** <t:${createdTimestamp}:F> (<t:${createdTimestamp}:R>)`,
+        `**Güncel Sunucu Üye Sayısı:** \`${member.guild.memberCount}\``
     ], 0x2ecc71);
 });
 
@@ -214,16 +214,16 @@ client.on('guildMemberRemove', async member => {
     const joinedTimestamp = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
     
     if (kickExecutor) {
-        sendLog(client, '🥾 Üye Sunucudan Atıldı (Kick)', [
-            `👤 **Atılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
-            `🛡️ **Atan Yetkili:** ${kickExecutor} (\`${kickExecutor.tag}\`)`,
-            `👥 **Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
+        sendLog(client, 'Üye Sunucudan Atıldı (Kick)', [
+            `**Atılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
+            `**Atan Yetkili:** ${kickExecutor} (\`${kickExecutor.tag}\`)`,
+            `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
         ], 0xe67e22);
     } else {
-        sendLog(client, '🚪 Üye Sunucudan Ayrıldı', [
-            `👤 **Ayrılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
-            `📅 **Sunucuya Katıldığı Tarih:** ${joinedTimestamp ? `<t:${joinedTimestamp}:F> (<t:${joinedTimestamp}:R>)` : 'Bilinmiyor'}`,
-            `👥 **Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
+        sendLog(client, 'Üye Sunucudan Ayrıldı', [
+            `**Ayrılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
+            `**Sunucuya Katıldığı Tarih:** ${joinedTimestamp ? `<t:${joinedTimestamp}:F> (<t:${joinedTimestamp}:R>)` : 'Bilinmiyor'}`,
+            `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
         ], 0xe74c3c);
     }
 });
@@ -236,17 +236,17 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberRoleUpdate, newMember.id);
 
         if (addedRoles.size > 0) {
-            sendLog(client, '🎭 Kullanıcıya Rol Verildi', [
-                `👤 **Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
-                `🛡️ **Rolü Veren:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
-                `🟢 **Verilen Rol(ler):** ${addedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
+            sendLog(client, 'Kullanıcıya Rol Verildi', [
+                `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
+                `**Rolü Veren:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
+                `**Verilen Rol(ler):** ${addedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
             ], 0x3498db);
         }
         if (removedRoles.size > 0) {
-            sendLog(client, '🎭 Kullanıcıdan Rol Alındı', [
-                `👤 **Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
-                `🛡️ **Rolü Alan:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
-                `🔴 **Alınan Rol(ler):** ${removedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
+            sendLog(client, 'Kullanıcıdan Rol Alındı', [
+                `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
+                `**Rolü Alan:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
+                `**Alınan Rol(ler):** ${removedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
             ], 0xe67e22);
         }
     }
@@ -254,77 +254,77 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     // İsim Değişikliği Takibi
     if (oldMember.nickname !== newMember.nickname) {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberUpdate, newMember.id);
-        sendLog(client, '📝 İsim (Nickname) Güncellendi', [
-            `👤 **Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
-            `🛡️ **Değiştiren:** ${executor ? `${executor} (\`${executor.tag}\`)` : `${newMember.user} (Kendisi)`}`,
-            `🔴 **Eski İsim:** \`${oldMember.nickname || oldMember.user.username}\``,
-            `🟢 **Yeni İsim:** \`${newMember.nickname || newMember.user.username}\``
+        sendLog(client, 'İsim (Nickname) Güncellendi', [
+            `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
+            `**Değiştiren:** ${executor ? `${executor} (\`${executor.tag}\`)` : `${newMember.user} (Kendisi)`}`,
+            `**Eski İsim:** \`${oldMember.nickname || oldMember.user.username}\``,
+            `**Yeni İsim:** \`${newMember.nickname || newMember.user.username}\``
         ], 0x3498db);
     }
 });
 
 client.on('guildBanAdd', async ban => {
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
-    sendLog(client, '🔨 Kullanıcı Sunucudan Yasaklandı (Ban)', [
-        `👤 **Yasaklanan Kullanıcı:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
-        `🛡️ **Yasaklayan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
-        `📜 **Ban Sebebi:** \`${ban.reason || 'Sebep belirtilmedi.'}\``
+    sendLog(client, 'Kullanıcı Sunucudan Yasaklandı (Ban)', [
+        `**Yasaklanan Kullanıcı:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
+        `**Yasaklayan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
+        `**Ban Sebebi:** \`${ban.reason || 'Sebep belirtilmedi.'}\``
     ], 0xe74c3c);
 });
 
 client.on('guildBanRemove', async ban => {
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanRemove, ban.user.id);
-    sendLog(client, '🔓 Kullanıcının Yasağı Kaldırıldı (Unban)', [
-        `👤 **Yasağı Açılan:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
-        `🛡️ **Yasağı Kaldıran Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
+    sendLog(client, 'Kullanıcının Yasağı Kaldırıldı (Unban)', [
+        `**Yasağı Açılan:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
+        `**Yasağı Kaldıran Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
     ], 0x2ecc71);
 });
 
 client.on('channelCreate', async channel => {
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
-    sendLog(client, '📁 Yeni Kanal Oluşturuldu', [
-        `📁 **Kanal:** ${channel} (\`${channel.name}\` - \`${channel.id}\`)`,
-        `🛡️ **Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
-        `📂 **Kategori:** \`${channel.parent ? channel.parent.name : 'Kategori Yok'}\``,
-        `⚙️ **Kanal Türü:** \`${channel.type}\``
+    sendLog(client, 'Yeni Kanal Oluşturuldu', [
+        `**Kanal:** ${channel} (\`${channel.name}\` - \`${channel.id}\`)`,
+        `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
+        `**Kategori:** \`${channel.parent ? channel.parent.name : 'Kategori Yok'}\``,
+        `**Kanal Türü:** \`${channel.type}\``
     ], 0x2ecc71);
 });
 
 client.on('channelDelete', async channel => {
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
-    sendLog(client, '📁 Kanal Silindi', [
-        `📁 **Silinen Kanal:** \`${channel.name}\` (\`${channel.id}\`)`,
-        `🛡️ **Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
-        `📂 **Bulunduğu Kategori:** \`${channel.parent ? channel.parent.name : 'Yok'}\``
+    sendLog(client, 'Kanal Silindi', [
+        `**Silinen Kanal:** \`${channel.name}\` (\`${channel.id}\`)`,
+        `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
+        `**Bulunduğu Kategori:** \`${channel.parent ? channel.parent.name : 'Yok'}\``
     ], 0xe74c3c);
 });
 
 client.on('channelUpdate', async (oldChannel, newChannel) => {
     if (oldChannel.name !== newChannel.name) {
         const executor = await getAuditExecutor(newChannel.guild, AuditLogEvent.ChannelUpdate, newChannel.id);
-        sendLog(client, '📁 Kanal Adı Güncellendi', [
-            `📁 **Kanal:** ${newChannel} (\`${newChannel.id}\`)`,
-            `🛡️ **Güncelleyen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
-            `🔴 **Eski Kanal Adı:** \`${oldChannel.name}\``,
-            `🟢 **Yeni Kanal Adı:** \`${newChannel.name}\``
+        sendLog(client, 'Kanal Adı Güncellendi', [
+            `**Kanal:** ${newChannel} (\`${newChannel.id}\`)`,
+            `**Güncelleyen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
+            `**Eski Kanal Adı:** \`${oldChannel.name}\``,
+            `**Yeni Kanal Adı:** \`${newChannel.name}\``
         ], 0xf1c40f);
     }
 });
 
 client.on('roleCreate', async role => {
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleCreate, role.id);
-    sendLog(client, '🏷️ Yeni Rol Oluşturuldu', [
-        `🏷️ **Rol:** ${role} (\`${role.name}\` - \`${role.id}\`)`,
-        `🛡️ **Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
-        `🎨 **Renk Kodu:** \`${role.hexColor}\``
+    sendLog(client, 'Yeni Rol Oluşturuldu', [
+        `**Rol:** ${role} (\`${role.name}\` - \`${role.id}\`)`,
+        `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
+        `**Renk Kodu:** \`${role.hexColor}\``
     ], 0x2ecc71);
 });
 
 client.on('roleDelete', async role => {
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleDelete, role.id);
-    sendLog(client, '🏷️ Rol Silindi', [
-        `🏷️ **Silinen Rol:** \`${role.name}\` (\`${role.id}\`)`,
-        `🛡️ **Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
+    sendLog(client, 'Rol Silindi', [
+        `**Silinen Rol:** \`${role.name}\` (\`${role.id}\`)`,
+        `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
     ], 0xe74c3c);
 });
 
@@ -341,11 +341,11 @@ client.on('messageCreate', async (message) => {
                 await message.member.timeout(60 * 1000, "Link/Reklam gönderimi yasak!"); // 1 dakika timeout
                 const replyMsg = await message.channel.send(`⚠️ ${message.author}, bu sunucuda link paylaşmak yasaktır! (1 Dakika Susturuldun)`);
                 setTimeout(() => replyMsg.delete().catch(() => {}), 10000); // Uyarıyı 10 saniye sonra sil
-                sendLog(client, '🔗 Reklam / Link Engellendi', [
-                    `👤 **Kullanıcı:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)`,
-                    `📁 **Kanal:** ${message.channel} (\`${message.channel.name}\`)`,
-                    `🚫 **Uygulanan Ceza:** \`1 Dakika Zaman Aşımı (Timeout)\``,
-                    `💬 **Engellenen Mesaj:**\n> ${message.content}`
+                sendLog(client, 'Reklam / Link Engellendi', [
+                    `**Kullanıcı:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)`,
+                    `**Kanal:** ${message.channel} (\`${message.channel.name}\`)`,
+                    `**Uygulanan Ceza:** \`1 Dakika Zaman Aşımı (Timeout)\``,
+                    `**Engellenen Mesaj:**\n> ${message.content}`
                 ], 0xe74c3c);
             } catch (err) {
                 console.error("Link koruma hatası:", err);
@@ -391,12 +391,12 @@ client.on('messageCreate', async (message) => {
                     const container = new ContainerBuilder()
                         .setAccentColor(0x9b59b6)
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent('## 🛡️ Moderatör Komut İşlemi'),
+                            new TextDisplayBuilder().setContent('## Moderatör Komut İşlemi'),
                             new TextDisplayBuilder().setContent(
-                                `👤 **Yetkili:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)\n` +
-                                `📁 **Kanal:** ${message.channel} (\`${message.channel.name}\`)\n` +
-                                `⚡ **Kullanılan Komut:** \`${message.content}\`\n` +
-                                `⏰ **Zaman:** <t:${timestamp}:F> (<t:${timestamp}:R>)`
+                                `**Yetkili:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)\n` +
+                                `**Kanal:** ${message.channel} (\`${message.channel.name}\`)\n` +
+                                `**Kullanılan Komut:** \`${message.content}\`\n` +
+                                `**Zaman:** <t:${timestamp}:F> (<t:${timestamp}:R>)`
                             )
                         );
                     modLog.send({ components: [container], flags: MessageFlags.IsComponentsV2 }).catch(() => {});

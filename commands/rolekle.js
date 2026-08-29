@@ -40,12 +40,12 @@ module.exports = {
             const container = new ContainerBuilder()
                 .setAccentColor(0x2ecc71)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## 🎭 Rol Başarıyla Verildi`),
+                    new TextDisplayBuilder().setContent(`## Rol Başarıyla Verildi`),
                     new TextDisplayBuilder().setContent(
-                        `👤 **Kullanıcı:** ${targetMember} (\`${targetMember.user.tag}\`)\n` +
-                        `🏷️ **Verilen Rol:** ${targetRole} (\`${targetRole.name}\`)\n` +
-                        `🛡️ **Yetkili:** ${message.author} (\`${message.author.tag}\`)\n` +
-                        `⏰ **Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                        `**Kullanıcı:** ${targetMember} (\`${targetMember.user.tag}\`)\n` +
+                        `**Verilen Rol:** ${targetRole} (\`${targetRole.name}\`)\n` +
+                        `**Yetkili:** ${message.author} (\`${message.author.tag}\`)\n` +
+                        `**Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`
                     )
                 );
 
