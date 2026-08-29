@@ -220,10 +220,9 @@ module.exports = {
             const attachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'rank.png' });
 
             const container = new ContainerBuilder()
-                .setAccentColor(0xf1c40f)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## 🏆 ${user.username} - Seviye Kartı`),
-                    new TextDisplayBuilder().setContent(`⭐ **Seviye:** \`${stats.level}\` | 🥇 **Sıralama:** \`#${rankPos}\` | ✨ **XP:** \`${stats.xp}/${neededXP}\``)
+                    new TextDisplayBuilder().setContent(`## ${user.username} - Seviye Kartı`),
+                    new TextDisplayBuilder().setContent(`**Seviye:** \`${stats.level}\` | **Sıralama:** \`#${rankPos}\` | **XP:** \`${stats.xp}/${neededXP}\``)
                 );
 
             const media = new MediaGalleryBuilder().addItems([{ media: { url: 'attachment://rank.png' } }]);
@@ -237,7 +236,7 @@ module.exports = {
 
         } catch (error) {
             console.error("Rank komutu hatası:", error);
-            message.reply("❌ Sıralama kartı oluşturulurken bir hata meydana geldi!");
+            message.reply("Sıralama kartı oluşturulurken bir hata meydana geldi.");
         }
     }
 };

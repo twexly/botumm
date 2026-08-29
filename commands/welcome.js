@@ -7,17 +7,16 @@ module.exports = {
         try {
             const channel = message.mentions.channels.first();
             if (!channel) {
-                return message.reply("💡 Lütfen bir kanal etiketle! (Örnek: !welcome #gelen-giden)");
+                return message.reply("Lütfen bir kanal etiketleyin. (Örnek: .welcome #gelen-giden)");
             }
 
             client.welcomeChannelId = channel.id;
             client.saveConfig();
             
             const container = new ContainerBuilder()
-                .setAccentColor(0x2ecc71)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('## ✅ Karşılama Sistemi Aktif!'),
-                    new TextDisplayBuilder().setContent(`Karşılama kanalı başarıyla ${channel} olarak ayarlandı! Artık yeni gelenlere resimli karşılama mesajı atılacak.`)
+                    new TextDisplayBuilder().setContent('## Karşılama Sistemi Aktif'),
+                    new TextDisplayBuilder().setContent(`Karşılama kanalı başarıyla ${channel} olarak ayarlandı. Artık yeni gelenlere resimli karşılama mesajı gönderilecek.`)
                 );
 
             message.reply({ 
@@ -26,7 +25,7 @@ module.exports = {
             });
         } catch (error) {
             console.error("Welcome komutu hatası:", error);
-            message.reply("❌ Bir hata oluştu!");
+            message.reply("Bir hata oluştu.");
         }
     }
 };

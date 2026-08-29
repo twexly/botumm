@@ -9,7 +9,7 @@ module.exports = {
             (args[0] ? await message.guild.members.fetch(args[0]).catch(() => null) : null);
 
         if (!targetMember) {
-            return message.reply("💡 Lütfen rol verilecek kullanıcıyı etiketle veya ID'sini gir! (Örn: `.rolekle @kullanıcı @rol`)");
+            return message.reply("Lütfen rol verilecek kullanıcıyı etiketleyin veya ID'sini girin. (Örnek: .rolekle @kullanıcı @rol)");
         }
 
         // 2. Rolü Bul (Etiket, ID veya İsim ile)
@@ -20,17 +20,17 @@ module.exports = {
         }
 
         if (!targetRole) {
-            return message.reply("💡 Lütfen verilecek geçerli bir rol etiketle, ID'sini yaz veya adını gir!");
+            return message.reply("Lütfen geçerli bir rol etiketleyin, ID'sini yazın veya adını girin.");
         }
 
         // 3. Yetki & Hiyerarşi Kontrolleri
         if (targetMember.roles.cache.has(targetRole.id)) {
-            return message.reply(`⚠️ **${targetMember.user.tag}** kullanıcısı zaten ${targetRole} rolüne sahip!`);
+            return message.reply(`**${targetMember.user.tag}** kullanıcısı zaten ${targetRole} rolüne sahip.`);
         }
 
         const botMember = message.guild.members.me;
         if (targetRole.position >= botMember.roles.highest.position) {
-            return message.reply("❌ Bu rol benim en yüksek rolümden üstte veya eşit olduğu için bu rolü veremiyorum!");
+            return message.reply("Bu rol benim en yüksek rolümden üstte veya eşit olduğu için verilemiyor.");
         }
 
         // 4. Rolü Ver
@@ -38,7 +38,6 @@ module.exports = {
             await targetMember.roles.add(targetRole, `Rol veren: ${message.author.tag} (${message.author.id})`);
 
             const container = new ContainerBuilder()
-                .setAccentColor(0x2ecc71)
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent(`## Rol Başarıyla Verildi`),
                     new TextDisplayBuilder().setContent(
@@ -54,7 +53,7 @@ module.exports = {
 
         } catch (error) {
             console.error("Rol ekleme hatası:", error);
-            message.reply("❌ Rol verilirken bir hata oluştu. Botun 'Rolleri Yönet' yetkisini ve rol sırasını kontrol edin.");
+            message.reply("Rol verilirken bir hata oluştu. Botun 'Rolleri Yönet' yetkisini ve rol sırasını kontrol edin.");
         }
     }
 };

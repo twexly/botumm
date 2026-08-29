@@ -229,7 +229,7 @@ module.exports = {
             let createVoiceChannel = guild.channels.cache.find(c => c.parentId === category.id && c.type === ChannelType.GuildVoice && c.name.includes('oda-olustur'));
             if (!createVoiceChannel) {
                 createVoiceChannel = await guild.channels.create({
-                    name: '➕ Oda Oluştur',
+                    name: 'Oda Oluştur',
                     type: ChannelType.GuildVoice,
                     parent: category.id
                 });
@@ -240,17 +240,17 @@ module.exports = {
             const attachment = new AttachmentBuilder(bannerBuffer, { name: 'custom_voice_panel.png' });
 
             const row1 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('ozeloda_rename').setLabel('İsim Değiştir').setStyle(ButtonStyle.Secondary).setEmoji('✏️'),
-                new ButtonBuilder().setCustomId('ozeloda_limit').setLabel('Kişi Limiti').setStyle(ButtonStyle.Secondary).setEmoji('👥'),
-                new ButtonBuilder().setCustomId('ozeloda_lock').setLabel('Kilitle / Aç').setStyle(ButtonStyle.Secondary).setEmoji('🔒'),
-                new ButtonBuilder().setCustomId('ozeloda_kick').setLabel('Kullanıcı At').setStyle(ButtonStyle.Secondary).setEmoji('🚪')
+                new ButtonBuilder().setCustomId('ozeloda_rename').setLabel('İsim Değiştir').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_limit').setLabel('Kişi Limiti').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_lock').setLabel('Kilitle / Aç').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_kick').setLabel('Kullanıcı At').setStyle(ButtonStyle.Secondary)
             );
 
             const row2 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('ozeloda_allow').setLabel('Erişim Ver').setStyle(ButtonStyle.Secondary).setEmoji('➕'),
-                new ButtonBuilder().setCustomId('ozeloda_deny').setLabel('Erişim Kaldır').setStyle(ButtonStyle.Secondary).setEmoji('➖'),
-                new ButtonBuilder().setCustomId('ozeloda_transfer').setLabel('Sahip Devret').setStyle(ButtonStyle.Secondary).setEmoji('👑'),
-                new ButtonBuilder().setCustomId('ozeloda_delete').setLabel('Odayı Kapat').setStyle(ButtonStyle.Danger).setEmoji('🗑️')
+                new ButtonBuilder().setCustomId('ozeloda_allow').setLabel('Erişim Ver').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_deny').setLabel('Erişim Kaldır').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_transfer').setLabel('Sahip Devret').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('ozeloda_delete').setLabel('Odayı Kapat').setStyle(ButtonStyle.Danger)
             );
 
             await panelChannel.send({
@@ -265,11 +265,11 @@ module.exports = {
 
             fs.writeFileSync('./config.json', JSON.stringify(client.serverConfig, null, 2));
 
-            message.reply(`✅ Özel oda sistemi başarıyla kuruldu!\n📁 Kategori: ${category.name}\n💬 Panel Kanalı: ${panelChannel}\n🔊 Oluşturma Kanalı: ${createVoiceChannel}`);
+            message.reply(`Özel oda sistemi başarıyla kuruldu.\nKategori: ${category.name}\nPanel Kanalı: ${panelChannel}\nOluşturma Kanalı: ${createVoiceChannel}`);
 
         } catch (error) {
             console.error("Özel oda komutu hatası:", error);
-            message.reply("❌ Özel oda sistemi kurulurken bir hata oluştu!");
+            message.reply("Özel oda sistemi kurulurken bir hata oluştu.");
         }
     }
 };

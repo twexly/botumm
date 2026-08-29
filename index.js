@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`🌐 Web sunucusu ${port} portunda başarıyla başlatıldı.`);
+    console.log(`Web sunucusu ${port} portunda başarıyla başlatıldı.`);
 });
 
 // 1. ADIM: ÖNCE CLIENT TANIMLANIYOR
@@ -128,7 +128,7 @@ for (const file of commandFiles) {
 
 // Bot Aktif Olduğunda
 client.once('ready', () => {
-    console.log(`🚀 Bot aktif edildi: ${client.user.tag}`);
+    console.log(`Bot aktif edildi: ${client.user.tag}`);
 });
 
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
@@ -385,7 +385,7 @@ client.on('roleCreate', async role => {
         `**Rol:** ${role} (\`${role.name}\` - \`${role.id}\`)`,
         `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Renk Kodu:** \`${role.hexColor}\``
-    ], 0x2ecc71);
+    ]);
 });
 
 client.on('roleDelete', async role => {
@@ -393,7 +393,7 @@ client.on('roleDelete', async role => {
     sendLog(client, 'Rol Silindi', [
         `**Silinen Rol:** \`${role.name}\` (\`${role.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
-    ], 0xe74c3c);
+    ]);
 });
 
 // 3. ADIM: MESAJ DİNLENİYOR (KOMUTLAR VE XP SİSTEMİ)
@@ -407,14 +407,14 @@ client.on('messageCreate', async (message) => {
             try {
                 await message.delete();
                 await message.member.timeout(60 * 1000, "Link/Reklam gönderimi yasak!"); // 1 dakika timeout
-                const replyMsg = await message.channel.send(`⚠️ ${message.author}, bu sunucuda link paylaşmak yasaktır! (1 Dakika Susturuldun)`);
+                const replyMsg = await message.channel.send(`${message.author}, bu sunucuda link paylaşmak yasaktır! (1 Dakika Susturuldun)`);
                 setTimeout(() => replyMsg.delete().catch(() => {}), 10000); // Uyarıyı 10 saniye sonra sil
                 sendLog(client, 'Reklam / Link Engellendi', [
                     `**Kullanıcı:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)`,
                     `**Kanal:** ${message.channel} (\`${message.channel.name}\`)`,
                     `**Uygulanan Ceza:** \`1 Dakika Zaman Aşımı (Timeout)\``,
                     `**Engellenen Mesaj:**\n> ${message.content}`
-                ], 0xe74c3c);
+                ]);
             } catch (err) {
                 console.error("Link koruma hatası:", err);
             }
@@ -439,7 +439,7 @@ client.on('messageCreate', async (message) => {
         const command = client.commands.get(commandName);
         if (!command) {
             // Bilinmeyen / Eksik yazılan komut için bilgilendirme mesajı
-            const reply = await message.reply(`❓ **${prefix}${commandName}** adında bir komut bulunamadı!\n💡 Kullanabileceğin komutlar: \`${prefix}rank\`, \`${prefix}toplevel\`, \`${prefix}ship\`, \`${prefix}ai\` vb.`);
+            const reply = await message.reply(`**${prefix}${commandName}** adında bir komut bulunamadı.\nKullanabileceğin komutlar: \`${prefix}rank\`, \`${prefix}toplevel\`, \`${prefix}ship\`, \`${prefix}ai\` vb.`);
             setTimeout(() => reply.delete().catch(() => {}), 6000);
             return;
         }
@@ -447,7 +447,7 @@ client.on('messageCreate', async (message) => {
         // Yetki kontrolü (sadece 1541337917467795478 ID'li rol)
         if (command.modOnly) {
             if (!message.member.roles.cache.has('1541337917467795478')) {
-                const reply = await message.reply("❌ Bu komutu kullanmak için gerekli moderatör rolüne sahip değilsin!");
+                const reply = await message.reply("Bu komutu kullanmak için gerekli moderatör rolüne sahip değilsin.");
                 setTimeout(() => reply.delete().catch(() => {}), 6000);
                 return;
             }
@@ -457,7 +457,6 @@ client.on('messageCreate', async (message) => {
                 if (modLog) {
                     const timestamp = Math.floor(Date.now() / 1000);
                     const container = new ContainerBuilder()
-                        .setAccentColor(0x9b59b6)
                         .addTextDisplayComponents(
                             new TextDisplayBuilder().setContent('## Moderatör Komut İşlemi'),
                             new TextDisplayBuilder().setContent(
@@ -566,7 +565,7 @@ client.on('messageCreate', async (message) => {
                 ctx.fillStyle = '#f1c40f';
                 ctx.shadowColor = '#f1c40f';
                 ctx.shadowBlur = 10;
-                ctx.fillText('★ TEBRİKLER! (SEVİYE ATLADIN)', 230, 85);
+                ctx.fillText('TEBRİKLER! (SEVİYE ATLADIN)', 230, 85);
                 ctx.shadowBlur = 0;
 
                 ctx.font = 'bold 36px sans-serif';
@@ -597,7 +596,7 @@ client.on('messageCreate', async (message) => {
                 ctx.textAlign = 'center';
                 ctx.font = 'bold 16px sans-serif';
                 ctx.fillStyle = '#e2e8f0';
-                ctx.fillText('YENİ SEVİYE', badgeX, badgeY - 30);
+                ctx.fillText('YENI SEVIYE', badgeX, badgeY - 30);
 
                 ctx.font = 'bold 64px sans-serif';
                 ctx.fillStyle = '#f1c40f';
@@ -609,7 +608,7 @@ client.on('messageCreate', async (message) => {
                 const attachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'level-up.png' });
 
                 await targetChannel.send({ 
-                    content: `🎉 ${message.author} yeni bir seviyeye ulaştı! **(Seviye ${stats.level})**`, 
+                    content: `${message.author} yeni bir seviyeye ulaştı. **(Seviye ${stats.level})**`, 
                     files: [attachment] 
                 });
             } catch (err) {
@@ -652,40 +651,36 @@ client.on('guildMemberAdd', async (member) => {
         // 1. Arka Plan Görseli (1024x250 Doğrudan Şeffaf PNG)
         const bgPngPath = path.join(__dirname, 'assets', 'welcome_bg.png');
         if (fs.existsSync(bgPngPath)) {
-            const bg = await loadImage(bgPngPath);
-            ctx.drawImage(bg, 0, 0, 1024, 250);
+            const bgImage = await loadImage(bgPngPath);
+            ctx.drawImage(bgImage, 0, 0, 1024, 250);
         } else {
-            ctx.fillStyle = '#1c1524';
+            // Şeffaf kırpma
+            drawRoundRect(ctx, 0, 0, 1024, 250, 24);
+            ctx.clip();
+            const bgGrad = ctx.createLinearGradient(0, 0, 1024, 250);
+            bgGrad.addColorStop(0, '#0a0a0f');
+            bgGrad.addColorStop(1, '#14141e');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, 1024, 250);
         }
 
         // 2. Avatar
-        const avatarRadius = 75;
-        const avatarX = 125;
-        const avatarY = 125;
-
         const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
-        try {
-            const avatar = await loadImage(avatarURL);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatar, avatarX - avatarRadius, avatarY - avatarRadius, avatarRadius * 2, avatarRadius * 2);
-            ctx.restore();
-        } catch (e) {
-            console.error("Avatar yükleme hatası:", e);
-        }
+        const avatar = await loadImage(avatarURL);
 
-        // Avatar ince çerçeve
+        const avSize = 150;
+        const avX = 55;
+        const avY = 50;
+
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-        ctx.lineWidth = 4;
-        ctx.stroke();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(avatar, avX, avY, avSize, avSize);
+        ctx.restore();
 
-        // 3. Sağ Üst Rozet (Pill Badge: 6092. üye)
+        // 3. Sağ Üst Üye Sayısı Rozeti
         const memberCount = member.guild.memberCount;
         const badgeText = `${memberCount}. üye`;
         ctx.font = 'bold 20px sans-serif';
@@ -738,7 +733,7 @@ client.on('guildMemberAdd', async (member) => {
         const countStr = memberCount.toString().split('').join(' '); 
 
         await channel.send({
-            content: `> <a:hello:1541362303797301318> ${member.user} Sunucuya katıldı! Seninle birlikte **${countStr}** Kişi olduk`,
+            content: `> ${member.user} Sunucuya katıldı. Seninle birlikte **${countStr}** kişi olduk.`,
             files: [attachment]
         });
 
@@ -756,14 +751,14 @@ client.on('interactionCreate', async (interaction) => {
 
         if (!room || room.ownerId !== interaction.user.id) {
             return interaction.reply({
-                content: '❌ Bu işlemi gerçekleştirmek için sana ait olan bir özel ses kanalının içinde olmalısın!',
+                content: 'Bu işlemi gerçekleştirmek için sana ait olan bir özel ses kanalının içinde olmalısın.',
                 flags: MessageFlags.Ephemeral
             });
         }
 
         const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
         if (!voiceChannel) {
-            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Özel ses odası bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
         // İsim Değiştir Modal
@@ -813,7 +808,7 @@ client.on('interactionCreate', async (interaction) => {
             });
 
             return interaction.reply({
-                content: newLock ? '🔒 Özel odanız kilitlendi! İzin verilmeyen kullanıcılar giremez.' : '🔓 Özel odanızın kilidi açıldı! Artık herkes katılabilir.',
+                content: newLock ? 'Özel odanız kilitlendi. İzin verilmeyen kullanıcılar giremez.' : 'Özel odanızın kilidi açıldı. Artık herkes katılabilir.',
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -826,7 +821,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setMaxValues(1);
 
             return interaction.reply({
-                content: '🚪 Lütfen odadan çıkartmak istediğiniz kullanıcıyı seçin:',
+                content: 'Lütfen odadan çıkartmak istediğiniz kullanıcıyı seçin:',
                 components: [new ActionRowBuilder().addComponents(select)],
                 flags: MessageFlags.Ephemeral
             });
@@ -840,7 +835,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setMaxValues(1);
 
             return interaction.reply({
-                content: '➕ Lütfen odaya giriş izni vermek istediğiniz kullanıcıyı seçin:',
+                content: 'Lütfen odaya giriş izni vermek istediğiniz kullanıcıyı seçin:',
                 components: [new ActionRowBuilder().addComponents(select)],
                 flags: MessageFlags.Ephemeral
             });
@@ -854,7 +849,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setMaxValues(1);
 
             return interaction.reply({
-                content: '➖ Lütfen giriş iznini kaldırmak istediğiniz kullanıcıyı seçin:',
+                content: 'Lütfen giriş iznini kaldırmak istediğiniz kullanıcıyı seçin:',
                 components: [new ActionRowBuilder().addComponents(select)],
                 flags: MessageFlags.Ephemeral
             });
@@ -868,7 +863,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setMaxValues(1);
 
             return interaction.reply({
-                content: '👑 Lütfen oda sahipliğini devretmek istediğiniz kullanıcıyı seçin:',
+                content: 'Lütfen oda sahipliğini devretmek istediğiniz kullanıcıyı seçin:',
                 components: [new ActionRowBuilder().addComponents(select)],
                 flags: MessageFlags.Ephemeral
             });
@@ -879,7 +874,7 @@ client.on('interactionCreate', async (interaction) => {
             client.customVoiceRooms.delete(room.channelId);
             await voiceChannel.delete().catch(() => {});
             return interaction.reply({
-                content: '🗑️ Özel ses odanız başarıyla silindi.',
+                content: 'Özel ses odanız başarıyla silindi.',
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -892,30 +887,30 @@ client.on('interactionCreate', async (interaction) => {
 
         if (!room || room.ownerId !== interaction.user.id) {
             return interaction.reply({
-                content: '❌ Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın!',
+                content: 'Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın.',
                 flags: MessageFlags.Ephemeral
             });
         }
 
         const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
         if (!voiceChannel) {
-            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Özel ses odası bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
         if (interaction.customId === 'ozeloda_modal_rename') {
             const newName = interaction.fields.getTextInputValue('room_name');
             await voiceChannel.setName(newName);
-            return interaction.reply({ content: `✅ Oda ismi **${newName}** olarak güncellendi!`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `Oda ismi **${newName}** olarak güncellendi.`, flags: MessageFlags.Ephemeral });
         }
 
         if (interaction.customId === 'ozeloda_modal_limit') {
             const limitStr = interaction.fields.getTextInputValue('room_limit');
             const limit = parseInt(limitStr);
             if (isNaN(limit) || limit < 0 || limit > 99) {
-                return interaction.reply({ content: '❌ Lütfen 0 ile 99 arasında bir sayı girin!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: 'Lütfen 0 ile 99 arasında bir sayı girin.', flags: MessageFlags.Ephemeral });
             }
             await voiceChannel.setUserLimit(limit);
-            return interaction.reply({ content: `✅ Oda limiti **${limit === 0 ? 'Limitsiz' : limit}** olarak ayarlandı!`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `Oda limiti **${limit === 0 ? 'Limitsiz' : limit}** olarak ayarlandı.`, flags: MessageFlags.Ephemeral });
         }
     }
 
@@ -926,14 +921,14 @@ client.on('interactionCreate', async (interaction) => {
 
         if (!room || room.ownerId !== interaction.user.id) {
             return interaction.reply({
-                content: '❌ Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın!',
+                content: 'Bu işlemi gerçekleştirmek için sana ait bir özel odada olmalısın.',
                 flags: MessageFlags.Ephemeral
             });
         }
 
         const voiceChannel = interaction.guild.channels.cache.get(room.channelId);
         if (!voiceChannel) {
-            return interaction.reply({ content: '❌ Özel ses odası bulunamadı!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Özel ses odası bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
         const targetUserId = interaction.values[0];
@@ -943,7 +938,7 @@ client.on('interactionCreate', async (interaction) => {
             if (targetMember) await targetMember.voice.disconnect().catch(() => {});
             await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: false });
             return interaction.update({
-                content: `🚪 <@${targetUserId}> kullanıcısı odadan atıldı ve girişi engellendi.`,
+                content: `<@${targetUserId}> kullanıcısı odadan atıldı ve girişi engellendi.`,
                 components: []
             });
         }
@@ -951,7 +946,7 @@ client.on('interactionCreate', async (interaction) => {
         if (interaction.customId === 'ozeloda_select_allow') {
             await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: true, ViewChannel: true });
             return interaction.update({
-                content: `➕ <@${targetUserId}> kullanıcısına odaya giriş izni verildi.`,
+                content: `<@${targetUserId}> kullanıcısına odaya giriş izni verildi.`,
                 components: []
             });
         }
@@ -961,7 +956,7 @@ client.on('interactionCreate', async (interaction) => {
             if (targetMember) await targetMember.voice.disconnect().catch(() => {});
             await voiceChannel.permissionOverwrites.edit(targetUserId, { Connect: false });
             return interaction.update({
-                content: `➖ <@${targetUserId}> kullanıcısının odaya giriş izni kaldırıldı.`,
+                content: `<@${targetUserId}> kullanıcısının odaya giriş izni kaldırıldı.`,
                 components: []
             });
         }
@@ -978,7 +973,7 @@ client.on('interactionCreate', async (interaction) => {
                 ManageChannels: true
             });
             return interaction.update({
-                content: `👑 Oda sahipliği başarıyla <@${targetUserId}> kullanıcısına devredildi!`,
+                content: `Oda sahipliği başarıyla <@${targetUserId}> kullanıcısına devredildi.`,
                 components: []
             });
         }

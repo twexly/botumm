@@ -14,15 +14,15 @@ module.exports = {
         // Limit Kontrolü
         const currentCount = userLimits.get(userId) || 0;
         if (currentCount >= 2) {
-            return message.reply('❌ Günlük 2 soru limitini doldurdun.');
+            return message.reply('Günlük 2 soru limitini doldurdun.');
         }
 
-        let prompt = message.content.replace('!ai', '').replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
+        let prompt = message.content.replace(/^[!.]ai/i, '').replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
         if (!prompt) {
-            return message.reply('💡 Lütfen bana bir soru sor! (Örnek: !ai Merhaba)');
+            return message.reply('Lütfen bana bir soru sor! (Örnek: .ai Merhaba)');
         }
 
-        const statusMessage = await message.reply('🔍 AI Düşünüyor...');
+        const statusMessage = await message.reply('Yapay zeka yanıtı hazırlanıyor...');
 
         try {
             userLimits.set(userId, currentCount + 1);
@@ -39,13 +39,12 @@ module.exports = {
                 : aiResponseText;
 
             const container = new ContainerBuilder()
-                .setAccentColor(0x2ecc71)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## 🤖 AI Yanıtı\n\n${finalOutput}`)
+                    new TextDisplayBuilder().setContent(`## Yapay Zeka Yanıtı\n\n${finalOutput}`)
                 )
                 .addSeparatorComponents(new SeparatorBuilder())
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`*💡 Kalan Hak: ${2 - (currentCount + 1)}*`)
+                    new TextDisplayBuilder().setContent(`*Kalan Hak: ${2 - (currentCount + 1)}*`)
                 );
 
             await statusMessage.edit({
@@ -57,7 +56,7 @@ module.exports = {
         } catch (error) {
             console.error("AI Hatası:", error); 
             userLimits.set(userId, currentCount); 
-            await statusMessage.edit('❌ Yanıt üretilemedi. Daha sonra tekrar dene.');
+            await statusMessage.edit('Yanıt üretilemedi. Daha sonra tekrar dene.');
         }
     }
 };

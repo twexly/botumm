@@ -21,7 +21,7 @@ module.exports = {
             
         } catch (error) {
             console.error("Test komutu hatası:", error);
-            message.reply(`❌ Bir hata oluştu: ${error.message}`);
+            message.reply(`Bir hata oluştu: ${error.message}`);
         }
     }
 };

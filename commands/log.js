@@ -7,7 +7,7 @@ module.exports = {
         try {
             // Sunucuda kategori oluştur
             const category = await message.guild.channels.create({
-                name: '📋 SUNUCU LOGLARI',
+                name: 'SUNUCU LOGLARI',
                 type: 4 // Category
             });
 
@@ -30,17 +30,16 @@ module.exports = {
             client.saveConfig();
 
             const container = new ContainerBuilder()
-                .setAccentColor(0x2ecc71)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('## ✅ Log Sistemi Kuruldu!'),
-                    new TextDisplayBuilder().setContent(`Kategori ve kanallar başarıyla oluşturuldu.\n\n🛡️ **Moderatör Log:** ${modLogChannel}\n📋 **Genel Log:** ${serverLogChannel}`)
+                    new TextDisplayBuilder().setContent('## Log Sistemi Kuruldu'),
+                    new TextDisplayBuilder().setContent(`Kategori ve kanallar başarıyla oluşturuldu.\n\n**Moderatör Log:** ${modLogChannel}\n**Genel Log:** ${serverLogChannel}`)
                 );
 
             await message.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
 
         } catch (error) {
             console.error("Log kurulum hatası:", error);
-            message.reply("❌ Log kanalları oluşturulurken hata meydana geldi. Botun yetkilerini kontrol edin.");
+            message.reply("Log kanalları oluşturulurken hata meydana geldi. Botun yetkilerini kontrol edin.");
         }
     }
 };

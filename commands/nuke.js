@@ -11,15 +11,14 @@ module.exports = {
             await newChannel.setPosition(position);
             
             const container = new ContainerBuilder()
-                .setAccentColor(0x9b59b6)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## ☢️ Kanal Nukelendi!`),
-                    new TextDisplayBuilder().setContent(`Bu kanal tertemiz oldu.`)
+                    new TextDisplayBuilder().setContent(`## Kanal Yenilendi`),
+                    new TextDisplayBuilder().setContent(`Bu kanal başarıyla temizlendi.`)
                 );
             const msg = await newChannel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
             setTimeout(() => msg.delete().catch(()=> {}), 10000);
         } catch (err) {
-            message.reply("❌ Kanal nukelenirken hata oluştu!");
+            message.reply("Kanal yenilenirken hata oluştu.");
         }
     }
 };

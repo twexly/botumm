@@ -5,20 +5,19 @@ module.exports = {
     modOnly: true,
     async execute(message, client, args) {
         const target = message.mentions.members.first();
-        if (!target) return message.reply("💡 Lütfen atılacak kişiyi etiketle!");
+        if (!target) return message.reply("Lütfen atılacak kişiyi etiketleyin.");
         
         try {
-            await target.kick(`Kovan: ${message.author.tag}`);
+            await target.kick(`Atan: ${message.author.tag}`);
             const container = new ContainerBuilder()
-                .setAccentColor(0xe67e22)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## 🥾 Kullanıcı Atıldı`),
+                    new TextDisplayBuilder().setContent(`## Kullanıcı Atıldı`),
                     new TextDisplayBuilder().setContent(`**${target.user.tag}** sunucudan başarıyla atıldı.`)
                 );
             const msg = await message.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             setTimeout(() => msg.delete().catch(()=> {}), 10000);
         } catch (err) {
-            message.reply("❌ Bu kullanıcıyı atamıyorum, yetkilerimi veya üyenin rol sırasını kontrol et.");
+            message.reply("Bu kullanıcıyı atamıyorum, yetkilerimi veya üyenin rol sırasını kontrol edin.");
         }
     }
 };

@@ -19,7 +19,7 @@ module.exports = {
             });
 
             if (allUsers.length === 0) {
-                return message.reply("❌ Sunucuda henüz hiç veri yok!");
+                return message.reply("Sunucuda henüz hiç veri yok.");
             }
 
             const topLevel = [...allUsers].sort((a, b) => b.level - a.level).slice(0, 5);
@@ -38,16 +38,15 @@ module.exports = {
             };
 
             const container = new ContainerBuilder()
-                .setAccentColor(0xffaa00)
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('# 🏆 Sunucu Liderlik Tablosu'),
-                    new TextDisplayBuilder().setContent('*Sohbet ettikçe ve seste durdukça yükselirsin!*')
+                    new TextDisplayBuilder().setContent('# Sunucu Liderlik Tablosu'),
+                    new TextDisplayBuilder().setContent('*Sohbet ettikçe ve seste durdukça sıralamada yükselirsiniz.*')
                 )
                 .addSeparatorComponents(new SeparatorBuilder())
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('### 🌟 En Yüksek Seviyeler\n' + (formatTop(topLevel, 'level') || 'Yok')),
-                    new TextDisplayBuilder().setContent('### 💬 En Çok Mesaj Yazanlar\n' + (formatTop(topMessages, 'messages') || 'Yok')),
-                    new TextDisplayBuilder().setContent('### 🎤 Seste En Çok Kalanlar\n' + (formatTop(topVoice, 'voiceTime') || 'Yok'))
+                    new TextDisplayBuilder().setContent('### En Yüksek Seviyeler\n' + (formatTop(topLevel, 'level') || 'Yok')),
+                    new TextDisplayBuilder().setContent('### En Çok Mesaj Gönderenler\n' + (formatTop(topMessages, 'messages') || 'Yok')),
+                    new TextDisplayBuilder().setContent('### Seste En Çok Kalanlar\n' + (formatTop(topVoice, 'voiceTime') || 'Yok'))
                 );
 
             await message.reply({ 
@@ -56,7 +55,7 @@ module.exports = {
             });
         } catch (error) {
             console.error("TopLevel komutu hatası:", error);
-            message.reply("❌ Liderlik tablosu oluşturulamadı!");
+            message.reply("Liderlik tablosu oluşturulamadı.");
         }
     }
 };
