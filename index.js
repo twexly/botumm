@@ -100,6 +100,16 @@ client.saveConfig = () => {
     fs.writeFileSync(configPath, JSON.stringify(client.serverConfig, null, 2));
 };
 
+// Yetkili / Moderatör Kontrolü (Sunucu Sahibi, Administrator veya Ayarlanan Yetkili Rolü)
+client.isModerator = (member) => {
+    if (!member) return false;
+    if (member.id === member.guild?.ownerId) return true;
+    if (member.permissions?.has(PermissionFlagsBits.Administrator)) return true;
+    const modRoleId = client.serverConfig?.modRole || '1541337917467795478';
+    if (modRoleId && member.roles?.cache?.has(modRoleId)) return true;
+    return false;
+};
+
 // Veritabanını Yükle
 if (fs.existsSync(dbPath)) {
     try {
@@ -401,7 +411,7 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     // --- REKLAM / LİNK KORUMASI ---
-    if (client.serverConfig.antiLink && !message.member.roles.cache.has('1541337917467795478')) {
+    if (client.serverConfig.antiLink && !client.isModerator(message.member)) {
         const linkRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|\b[a-z0-9.-]+\.[a-z]{2,}\b)/i;
         if (linkRegex.test(message.content)) {
             try {
@@ -439,15 +449,15 @@ client.on('messageCreate', async (message) => {
         const command = client.commands.get(commandName);
         if (!command) {
             // Bilinmeyen / Eksik yazılan komut için bilgilendirme mesajı
-            const reply = await message.reply(`**${prefix}${commandName}** adında bir komut bulunamadı.\nKullanabileceğin komutlar: \`${prefix}rank\`, \`${prefix}toplevel\`, \`${prefix}ship\`, \`${prefix}ai\` vb.`);
+            const reply = await message.reply(`**${prefix}${commandName}** adında bir komut bulunamadı.\nKullanabileceğin komutlar: \`${prefix}rank\`, \`${prefix}toplevel\`, \`${prefix}ship\`, \`${prefix}ai\`, \`${prefix}adminrole\` vb.`);
             setTimeout(() => reply.delete().catch(() => {}), 6000);
             return;
         }
 
-        // Yetki kontrolü (sadece 1541337917467795478 ID'li rol)
+        // Yetki kontrolü (Sunucu Sahibi, Administrator veya Yetkili Rolü)
         if (command.modOnly) {
-            if (!message.member.roles.cache.has('1541337917467795478')) {
-                const reply = await message.reply("Bu komutu kullanmak için gerekli moderatör rolüne sahip değilsin.");
+            if (!client.isModerator(message.member)) {
+                const reply = await message.reply("Bu komutu kullanmak için gerekli moderatör rolüne veya yetkisine sahip değilsin.");
                 setTimeout(() => reply.delete().catch(() => {}), 6000);
                 return;
             }
