@@ -3,6 +3,8 @@ const { ContainerBuilder, TextDisplayBuilder, MessageFlags, PermissionFlagsBits 
 module.exports = {
     name: 'adminrole',
     async execute(message, client, args) {
+        if (!message.guild) return;
+
         // Sadece Sunucu Sahibi veya Yönetici (Administrator) yetkisine sahip kişiler kullanabilir
         const isOwner = message.guild.ownerId === message.author.id;
         const isAdmin = message.member.permissions.has(PermissionFlagsBits.Administrator);
@@ -10,6 +12,8 @@ module.exports = {
         if (!isOwner && !isAdmin) {
             return message.reply("Bu komutu sadece sunucu sahibi veya Yönetici yetkisine sahip kullanıcılar kullanabilir.");
         }
+
+        const guildConfig = client.getGuildConfig(message.guild.id);
 
         // Rolü Bul (Etiket, ID veya İsim ile)
         let targetRole = message.mentions.roles.first();
@@ -19,23 +23,23 @@ module.exports = {
         }
 
         if (!targetRole) {
-            const currentModRole = client.serverConfig?.modRole;
+            const currentModRole = guildConfig?.modRole;
             const currentText = currentModRole 
                 ? `Mevcut yetkili rolü: <@&${currentModRole}> (\`${currentModRole}\`)` 
-                : 'Henüz bir yetkili rolü ayarlanmamış.';
+                : 'Bu sunucuda henüz bir yetkili rolü ayarlanmamış.';
             return message.reply(`${currentText}\n\nYeni bir rol ayarlamak için: \`.adminrole @rol\` veya \`.adminrole <rol_id>\``);
         }
 
         try {
-            // Config'e kaydet
-            client.serverConfig.modRole = targetRole.id;
+            // Sunucu bazlı kaydet
+            guildConfig.modRole = targetRole.id;
             client.saveConfig();
 
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent('## Yetkili Rolü Güncellendi'),
                     new TextDisplayBuilder().setContent(
-                        `Yetkili/Moderatör rolü başarıyla **${targetRole.name}** (${targetRole}) olarak ayarlandı.\n\n` +
+                        `Bu sunucu için yetkili/moderatör rolü başarıyla **${targetRole.name}** (${targetRole}) olarak ayarlandı.\n\n` +
                         `**Rol ID:** \`${targetRole.id}\`\n` +
                         `**Ayarlayan:** ${message.author} (\`${message.author.tag}\`)\n` +
                         `**Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`

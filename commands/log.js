@@ -4,6 +4,7 @@ module.exports = {
     name: 'log',
     modOnly: true,
     async execute(message, client) {
+        if (!message.guild) return;
         try {
             // Sunucuda kategori oluştur
             const category = await message.guild.channels.create({
@@ -24,15 +25,16 @@ module.exports = {
                 parent: category.id
             });
 
-            // Config'e kaydet
-            client.serverConfig.modLog = modLogChannel.id;
-            client.serverConfig.serverLog = serverLogChannel.id;
+            // Sunucu bazlı kaydet
+            const guildConfig = client.getGuildConfig(message.guild.id);
+            guildConfig.modLog = modLogChannel.id;
+            guildConfig.serverLog = serverLogChannel.id;
             client.saveConfig();
 
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent('## Log Sistemi Kuruldu'),
-                    new TextDisplayBuilder().setContent(`Kategori ve kanallar başarıyla oluşturuldu.\n\n**Moderatör Log:** ${modLogChannel}\n**Genel Log:** ${serverLogChannel}`)
+                    new TextDisplayBuilder().setContent(`Kategori ve kanallar bu sunucu için başarıyla oluşturuldu.\n\n**Moderatör Log:** ${modLogChannel}\n**Genel Log:** ${serverLogChannel}`)
                 );
 
             await message.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });

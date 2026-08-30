@@ -2,14 +2,16 @@ const { ContainerBuilder, TextDisplayBuilder, MessageFlags } = require('discord.
 
 module.exports = {
     name: 'offadd',
-    modOnly: true,
+    modOnly: true, // Sadece modlar açıp kapatabilir
     async execute(message, client) {
+        if (!message.guild) return;
         try {
-            client.serverConfig.antiLink = !client.serverConfig.antiLink;
+            const guildConfig = client.getGuildConfig(message.guild.id);
+            guildConfig.antiLink = !guildConfig.antiLink;
             client.saveConfig();
 
-            const status = client.serverConfig.antiLink ? 'AKTİF' : 'DEVRE DIŞI';
-            const desc = client.serverConfig.antiLink 
+            const status = guildConfig.antiLink ? 'AKTİF' : 'DEVRE DIŞI';
+            const desc = guildConfig.antiLink 
                 ? 'Artık yetkili dışındaki kimse link atamayacak. Link atanlar 1 dakika susturulacak.' 
                 : 'Artık herkes serbestçe link paylaşabilir.';
 

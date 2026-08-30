@@ -83,29 +83,46 @@ client.welcomeChannelId = null;
 const dbPath = './database.json';
 const configPath = './config.json';
 
-client.serverConfig = { modLog: null, serverLog: null };
+client.serverConfig = {};
 if (fs.existsSync(configPath)) {
     try {
-        client.serverConfig = JSON.parse(fs.readFileSync(configPath));
-        client.levelChannelId = client.serverConfig.levelChannel;
-        client.welcomeChannelId = client.serverConfig.welcomeChannel;
+        const rawConfig = JSON.parse(fs.readFileSync(configPath));
+        client.serverConfig = rawConfig;
     } catch (e) {
         console.error("Config okunamadı:", e);
     }
 }
 
+// Sunucu bazlı config yardımcısı (Her sunucunun ayarları ayrı tutulur)
+client.getGuildConfig = (guildId) => {
+    if (!guildId) return {};
+    if (!client.serverConfig[guildId]) {
+        client.serverConfig[guildId] = {
+            modLog: null,
+            serverLog: null,
+            levelChannel: null,
+            welcomeChannel: null,
+            customVoiceCategory: null,
+            customVoiceChannel: null,
+            customVoicePanel: null,
+            antiLink: false,
+            modRole: null
+        };
+    }
+    return client.serverConfig[guildId];
+};
+
 client.saveConfig = () => {
-    client.serverConfig.levelChannel = client.levelChannelId;
-    client.serverConfig.welcomeChannel = client.welcomeChannelId;
     fs.writeFileSync(configPath, JSON.stringify(client.serverConfig, null, 2));
 };
 
-// Yetkili / Moderatör Kontrolü (Sunucu Sahibi, Administrator veya Ayarlanan Yetkili Rolü)
+// Yetkili / Moderatör Kontrolü (Sunucu Sahibi, Administrator veya Sunucunun Ayarlanan Yetkili Rolü)
 client.isModerator = (member) => {
     if (!member) return false;
     if (member.id === member.guild?.ownerId) return true;
     if (member.permissions?.has(PermissionFlagsBits.Administrator)) return true;
-    const modRoleId = client.serverConfig?.modRole || '1541337917467795478';
+    const guildConfig = client.getGuildConfig(member.guild?.id);
+    const modRoleId = guildConfig?.modRole;
     if (modRoleId && member.roles?.cache?.has(modRoleId)) return true;
     return false;
 };
@@ -144,13 +161,16 @@ client.once('ready', () => {
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
 client.on('voiceStateUpdate', async (oldState, newState) => {
     if (newState.member?.user?.bot) return;
+    const guild = newState.guild || oldState.guild;
+    if (!guild) return;
+
     const userId = newState.member?.id;
+    const guildConfig = client.getGuildConfig(guild.id);
 
     // --- ÖZEL ODA (JOIN-TO-CREATE) SİSTEMİ ---
-    if (client.serverConfig.customVoiceChannel && newState.channelId === client.serverConfig.customVoiceChannel) {
+    if (guildConfig.customVoiceChannel && newState.channelId === guildConfig.customVoiceChannel) {
         try {
-            const guild = newState.guild;
-            const categoryId = client.serverConfig.customVoiceCategory;
+            const categoryId = guildConfig.customVoiceCategory;
             const userRoom = await guild.channels.create({
                 name: `${newState.member.displayName} Odası`,
                 type: ChannelType.GuildVoice,
@@ -189,7 +209,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
     // --- BOŞALAN ÖZEL ODALARI OTOMATİK SİLME ---
     if (oldState.channelId && client.customVoiceRooms.has(oldState.channelId)) {
-        const customChannel = oldState.guild.channels.cache.get(oldState.channelId);
+        const customChannel = guild.channels.cache.get(oldState.channelId);
         if (customChannel && customChannel.members.size === 0) {
             client.customVoiceRooms.delete(oldState.channelId);
             customChannel.delete().catch(() => {});
@@ -199,7 +219,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     // Kanala giriş
     if (!oldState.channelId && newState.channelId) {
         client.voiceSessions.set(userId, Date.now());
-        sendLog(client, 'Sesli Kanala Katıldı', [
+        sendLog(guild, 'Sesli Kanala Katıldı', [
             `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
             `**Katıldığı Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
         ]);
@@ -217,7 +237,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
             client.voiceSessions.delete(userId);
             durationText = formatDuration(duration);
         }
-        sendLog(client, 'Sesli Kanaldan Ayrıldı', [
+        sendLog(guild, 'Sesli Kanaldan Ayrıldı', [
             `**Kullanıcı:** ${oldState.member.user} (\`${oldState.member.user.tag}\` - \`${userId}\`)`,
             `**Ayrıldığı Kanal:** \`${oldState.channel.name}\``,
             `**Seste Kalma Süresi:** \`${durationText}\``
@@ -225,7 +245,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     }
     // Kanal değiştirme
     else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-        sendLog(client, 'Sesli Kanal Değiştirdi', [
+        sendLog(guild, 'Sesli Kanal Değiştirdi', [
             `**Kullanıcı:** ${newState.member.user} (\`${newState.member.user.tag}\` - \`${userId}\`)`,
             `**Eski Kanal:** \`${oldState.channel.name}\``,
             `**Yeni Kanal:** ${newState.channel} (\`${newState.channel.name}\`)`
@@ -233,10 +253,12 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     }
 });
 
-// LOG YARDIMCI FONKSİYONU (RENKSİZ, MİNİMAL & V2 FORMAT)
-async function sendLog(client, title, fields = []) {
-    if (!client.serverConfig || !client.serverConfig.serverLog) return;
-    const logChannel = client.channels.cache.get(client.serverConfig.serverLog);
+// LOG YARDIMCI FONKSİYONU (SUNUCU BAZLI & RENKSİZ FORMAT)
+async function sendLog(guild, title, fields = []) {
+    if (!guild) return;
+    const guildConfig = client.getGuildConfig(guild.id);
+    if (!guildConfig || !guildConfig.serverLog) return;
+    const logChannel = guild.channels.cache.get(guildConfig.serverLog);
     if (!logChannel) return;
 
     try {
@@ -255,58 +277,61 @@ async function sendLog(client, title, fields = []) {
     }
 }
 
-// DİĞER DETAYLI LOG EVENTLERİ
+// DİĞER DETAYLI LOG EVENTLERİ (SUNUCU BAZLI)
 client.on('messageDelete', async message => {
-    if (message.author?.bot) return;
+    if (message.author?.bot || !message.guild) return;
     const executor = await getAuditExecutor(message.guild, AuditLogEvent.MessageDelete, message.author?.id);
-    sendLog(client, 'Mesaj Silindi', [
+    sendLog(message.guild, 'Mesaj Silindi', [
         `**Mesaj Sahibi:** ${message.author} (\`${message.author?.tag}\` - \`${message.author?.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Kullanıcının Kendisi / Bilinmiyor'}`,
         `**Kanal:** ${message.channel} (\`${message.channel?.name}\`)`,
         `**Silinen İçerik:**\n> ${message.content || '[İçerik Yok Veya Medya]'}`
-    ], 0xe74c3c);
+    ]);
 });
 
 client.on('messageUpdate', (oldMessage, newMessage) => {
-    if (oldMessage.author?.bot || oldMessage.content === newMessage.content) return;
-    sendLog(client, 'Mesaj Düzenlendi', [
+    if (oldMessage.author?.bot || !newMessage.guild || oldMessage.content === newMessage.content) return;
+    sendLog(newMessage.guild, 'Mesaj Düzenlendi', [
         `**Mesaj Sahibi:** ${newMessage.author} (\`${newMessage.author?.tag}\` - \`${newMessage.author?.id}\`)`,
         `**Kanal:** ${newMessage.channel} (\`${newMessage.channel?.name}\`)`,
         `**Mesaj Bağlantısı:** [Mesaja Git](${newMessage.url})`,
         `**Eski İçerik:**\n> ${oldMessage.content || '[Yok]'}`,
         `**Yeni İçerik:**\n> ${newMessage.content || '[Yok]'}`
-    ], 0xf1c40f);
+    ]);
 });
 
 client.on('guildMemberAdd', member => {
+    if (!member.guild) return;
     const createdTimestamp = Math.floor(member.user.createdTimestamp / 1000);
-    sendLog(client, 'Sunucuya Yeni Üye Katıldı', [
+    sendLog(member.guild, 'Sunucuya Yeni Üye Katıldı', [
         `**Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
         `**Hesap Oluşturulma:** <t:${createdTimestamp}:F> (<t:${createdTimestamp}:R>)`,
         `**Güncel Sunucu Üye Sayısı:** \`${member.guild.memberCount}\``
-    ], 0x2ecc71);
+    ]);
 });
 
 client.on('guildMemberRemove', async member => {
+    if (!member.guild) return;
     const kickExecutor = await getAuditExecutor(member.guild, AuditLogEvent.MemberKick, member.id);
     const joinedTimestamp = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
     
     if (kickExecutor) {
-        sendLog(client, 'Üye Sunucudan Atıldı (Kick)', [
+        sendLog(member.guild, 'Üye Sunucudan Atıldı (Kick)', [
             `**Atılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
             `**Atan Yetkili:** ${kickExecutor} (\`${kickExecutor.tag}\`)`,
             `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
-        ], 0xe67e22);
+        ]);
     } else {
-        sendLog(client, 'Üye Sunucudan Ayrıldı', [
+        sendLog(member.guild, 'Üye Sunucudan Ayrıldı', [
             `**Ayrılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
             `**Sunucuya Katıldığı Tarih:** ${joinedTimestamp ? `<t:${joinedTimestamp}:F> (<t:${joinedTimestamp}:R>)` : 'Bilinmiyor'}`,
             `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
-        ], 0xe74c3c);
+        ]);
     }
 });
 
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
+    if (!newMember.guild) return;
     // Rol Değişikliği Takibi
     if (oldMember.roles.cache.size !== newMember.roles.cache.size) {
         const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
@@ -314,84 +339,90 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberRoleUpdate, newMember.id);
 
         if (addedRoles.size > 0) {
-            sendLog(client, 'Kullanıcıya Rol Verildi', [
+            sendLog(newMember.guild, 'Kullanıcıya Rol Verildi', [
                 `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
                 `**Rolü Veren:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
                 `**Verilen Rol(ler):** ${addedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
-            ], 0x3498db);
+            ]);
         }
         if (removedRoles.size > 0) {
-            sendLog(client, 'Kullanıcıdan Rol Alındı', [
+            sendLog(newMember.guild, 'Kullanıcıdan Rol Alındı', [
                 `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
                 `**Rolü Alan:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
                 `**Alınan Rol(ler):** ${removedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
-            ], 0xe67e22);
+            ]);
         }
     }
 
     // İsim Değişikliği Takibi
     if (oldMember.nickname !== newMember.nickname) {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberUpdate, newMember.id);
-        sendLog(client, 'İsim (Nickname) Güncellendi', [
+        sendLog(newMember.guild, 'İsim (Nickname) Güncellendi', [
             `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
             `**Değiştiren:** ${executor ? `${executor} (\`${executor.tag}\`)` : `${newMember.user} (Kendisi)`}`,
             `**Eski İsim:** \`${oldMember.nickname || oldMember.user.username}\``,
             `**Yeni İsim:** \`${newMember.nickname || newMember.user.username}\``
-        ], 0x3498db);
+        ]);
     }
 });
 
 client.on('guildBanAdd', async ban => {
+    if (!ban.guild) return;
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
-    sendLog(client, 'Kullanıcı Sunucudan Yasaklandı (Ban)', [
+    sendLog(ban.guild, 'Kullanıcı Sunucudan Yasaklandı (Ban)', [
         `**Yasaklanan Kullanıcı:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
         `**Yasaklayan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Ban Sebebi:** \`${ban.reason || 'Sebep belirtilmedi.'}\``
-    ], 0xe74c3c);
+    ]);
 });
 
 client.on('guildBanRemove', async ban => {
+    if (!ban.guild) return;
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanRemove, ban.user.id);
-    sendLog(client, 'Kullanıcının Yasağı Kaldırıldı (Unban)', [
+    sendLog(ban.guild, 'Kullanıcının Yasağı Kaldırıldı (Unban)', [
         `**Yasağı Açılan:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
         `**Yasağı Kaldıran Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
-    ], 0x2ecc71);
+    ]);
 });
 
 client.on('channelCreate', async channel => {
+    if (!channel.guild) return;
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
-    sendLog(client, 'Yeni Kanal Oluşturuldu', [
+    sendLog(channel.guild, 'Yeni Kanal Oluşturuldu', [
         `**Kanal:** ${channel} (\`${channel.name}\` - \`${channel.id}\`)`,
         `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Kategori:** \`${channel.parent ? channel.parent.name : 'Kategori Yok'}\``,
         `**Kanal Türü:** \`${channel.type}\``
-    ], 0x2ecc71);
+    ]);
 });
 
 client.on('channelDelete', async channel => {
+    if (!channel.guild) return;
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
-    sendLog(client, 'Kanal Silindi', [
+    sendLog(channel.guild, 'Kanal Silindi', [
         `**Silinen Kanal:** \`${channel.name}\` (\`${channel.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Bulunduğu Kategori:** \`${channel.parent ? channel.parent.name : 'Yok'}\``
-    ], 0xe74c3c);
+    ]);
 });
 
 client.on('channelUpdate', async (oldChannel, newChannel) => {
+    if (!newChannel.guild) return;
     if (oldChannel.name !== newChannel.name) {
         const executor = await getAuditExecutor(newChannel.guild, AuditLogEvent.ChannelUpdate, newChannel.id);
-        sendLog(client, 'Kanal Adı Güncellendi', [
+        sendLog(newChannel.guild, 'Kanal Adı Güncellendi', [
             `**Kanal:** ${newChannel} (\`${newChannel.id}\`)`,
             `**Güncelleyen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
             `**Eski Kanal Adı:** \`${oldChannel.name}\``,
             `**Yeni Kanal Adı:** \`${newChannel.name}\``
-        ], 0xf1c40f);
+        ]);
     }
 });
 
 client.on('roleCreate', async role => {
+    if (!role.guild) return;
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleCreate, role.id);
-    sendLog(client, 'Yeni Rol Oluşturuldu', [
+    sendLog(role.guild, 'Yeni Rol Oluşturuldu', [
         `**Rol:** ${role} (\`${role.name}\` - \`${role.id}\`)`,
         `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Renk Kodu:** \`${role.hexColor}\``
@@ -399,8 +430,9 @@ client.on('roleCreate', async role => {
 });
 
 client.on('roleDelete', async role => {
+    if (!role.guild) return;
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleDelete, role.id);
-    sendLog(client, 'Rol Silindi', [
+    sendLog(role.guild, 'Rol Silindi', [
         `**Silinen Rol:** \`${role.name}\` (\`${role.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
     ]);
@@ -408,10 +440,12 @@ client.on('roleDelete', async role => {
 
 // 3. ADIM: MESAJ DİNLENİYOR (KOMUTLAR VE XP SİSTEMİ)
 client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
+    if (message.author.bot || !message.guild) return;
+
+    const guildConfig = client.getGuildConfig(message.guild.id);
 
     // --- REKLAM / LİNK KORUMASI ---
-    if (client.serverConfig.antiLink && !client.isModerator(message.member)) {
+    if (guildConfig.antiLink && !client.isModerator(message.member)) {
         const linkRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|\b[a-z0-9.-]+\.[a-z]{2,}\b)/i;
         if (linkRegex.test(message.content)) {
             try {
@@ -419,7 +453,7 @@ client.on('messageCreate', async (message) => {
                 await message.member.timeout(60 * 1000, "Link/Reklam gönderimi yasak!"); // 1 dakika timeout
                 const replyMsg = await message.channel.send(`${message.author}, bu sunucuda link paylaşmak yasaktır! (1 Dakika Susturuldun)`);
                 setTimeout(() => replyMsg.delete().catch(() => {}), 10000); // Uyarıyı 10 saniye sonra sil
-                sendLog(client, 'Reklam / Link Engellendi', [
+                sendLog(message.guild, 'Reklam / Link Engellendi', [
                     `**Kullanıcı:** ${message.author} (\`${message.author.tag}\` - \`${message.author.id}\`)`,
                     `**Kanal:** ${message.channel} (\`${message.channel.name}\`)`,
                     `**Uygulanan Ceza:** \`1 Dakika Zaman Aşımı (Timeout)\``,
@@ -461,9 +495,9 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => reply.delete().catch(() => {}), 6000);
                 return;
             }
-            // Mod Log
-            if (client.serverConfig.modLog) {
-                const modLog = client.channels.cache.get(client.serverConfig.modLog);
+            // Mod Log (Sunucu Bazlı)
+            if (guildConfig.modLog) {
+                const modLog = message.guild.channels.cache.get(guildConfig.modLog);
                 if (modLog) {
                     const timestamp = Math.floor(Date.now() / 1000);
                     const container = new ContainerBuilder()
@@ -509,7 +543,7 @@ client.on('messageCreate', async (message) => {
     }
 
     if (leveledUp) {
-        const targetChannel = (client.levelChannelId && client.channels.cache.get(client.levelChannelId)) || message.channel;
+        const targetChannel = (guildConfig.levelChannel && message.guild.channels.cache.get(guildConfig.levelChannel)) || message.channel;
         if (targetChannel) {
             try {
                 // --- 900x260 YÜKSEK KALİTELİ NEON LEVEL-UP KARTI ---
@@ -650,8 +684,10 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
 }
 
 client.on('guildMemberAdd', async (member) => {
-    if (!client.welcomeChannelId) return;
-    const channel = member.guild.channels.cache.get(client.welcomeChannelId);
+    if (!member.guild) return;
+    const guildConfig = client.getGuildConfig(member.guild.id);
+    if (!guildConfig.welcomeChannel) return;
+    const channel = member.guild.channels.cache.get(guildConfig.welcomeChannel);
     if (!channel) return;
 
     try {

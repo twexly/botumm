@@ -2,7 +2,9 @@ const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, MessageFlags } =
 
 module.exports = {
     name: 'level',
+    modOnly: true,
     async execute(message, client) {
+        if (!message.guild) return;
         const channel = message.channel;
 
         try {
@@ -10,7 +12,8 @@ module.exports = {
                 SendMessages: false 
             });
 
-            client.levelChannelId = channel.id;
+            const guildConfig = client.getGuildConfig(message.guild.id);
+            guildConfig.levelChannel = channel.id;
             client.saveConfig();
 
             const container = new ContainerBuilder()

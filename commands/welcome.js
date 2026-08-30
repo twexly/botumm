@@ -4,13 +4,15 @@ module.exports = {
     name: 'welcome',
     modOnly: true,
     async execute(message, client) {
+        if (!message.guild) return;
         try {
             const channel = message.mentions.channels.first();
             if (!channel) {
                 return message.reply("Lütfen bir kanal etiketleyin. (Örnek: .welcome #gelen-giden)");
             }
 
-            client.welcomeChannelId = channel.id;
+            const guildConfig = client.getGuildConfig(message.guild.id);
+            guildConfig.welcomeChannel = channel.id;
             client.saveConfig();
             
             const container = new ContainerBuilder()

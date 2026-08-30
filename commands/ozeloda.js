@@ -258,12 +258,12 @@ module.exports = {
                 components: [row1, row2]
             });
 
-            // 5. Config'e Kaydet
-            client.serverConfig.customVoiceCategory = category.id;
-            client.serverConfig.customVoiceChannel = createVoiceChannel.id;
-            client.serverConfig.customVoicePanel = panelChannel.id;
-
-            fs.writeFileSync('./config.json', JSON.stringify(client.serverConfig, null, 2));
+            // 5. Sunucu Bazlı Config'e Kaydet
+            const guildConfig = client.getGuildConfig(guild.id);
+            guildConfig.customVoiceCategory = category.id;
+            guildConfig.customVoiceChannel = createVoiceChannel.id;
+            guildConfig.customVoicePanel = panelChannel.id;
+            client.saveConfig();
 
             message.reply(`Özel oda sistemi başarıyla kuruldu.\nKategori: ${category.name}\nPanel Kanalı: ${panelChannel}\nOluşturma Kanalı: ${createVoiceChannel}`);
 
