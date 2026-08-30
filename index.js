@@ -17,7 +17,8 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    UserSelectMenuBuilder
+    UserSelectMenuBuilder,
+    ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const { createCanvas } = require('canvas');
@@ -151,11 +152,20 @@ const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     client.commands.set(command.name, command);
+    if (command.aliases && Array.isArray(command.aliases)) {
+        for (const alias of command.aliases) {
+            client.commands.set(alias, command);
+        }
+    }
 }
 
 // Bot Aktif Olduğunda
 client.once('ready', () => {
     console.log(`Bot aktif edildi: ${client.user.tag}`);
+    client.user.setPresence({
+        activities: [{ name: '.yardım', type: ActivityType.Custom, state: '.yardım' }],
+        status: 'online'
+    });
 });
 
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
