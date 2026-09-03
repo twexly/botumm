@@ -254,7 +254,7 @@ module.exports = {
                 )
                 .addMediaGalleryComponents(
                     new MediaGalleryBuilder().addItems([
-                        { description: 'Süper Lig Puan Durumu', url: 'attachment://puandurumu.png' }
+                        { media: { url: 'attachment://puandurumu.png' }, description: 'Süper Lig Puan Durumu' }
                     ])
                 );
 

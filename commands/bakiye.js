@@ -222,7 +222,7 @@ module.exports = {
                 )
                 .addMediaGalleryComponents(
                     new MediaGalleryBuilder().addItems([
-                        { description: 'Bakiye Kartı', url: 'attachment://bakiye.png' }
+                        { media: { url: 'attachment://bakiye.png' }, description: 'Bakiye Kartı' }
                     ])
                 );
 
