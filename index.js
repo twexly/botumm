@@ -1684,6 +1684,49 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
+    // --- SUNUCU DOĞRULAMA (VERIFY) BUTONU ---
+    if (interaction.isButton() && interaction.customId === 'verify_member_btn') {
+        if (!interaction.guild) return;
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+        const verifyRoleId = guildConfig?.verifyRole;
+
+        if (!verifyRoleId) {
+            return interaction.reply({
+                content: '⚠️ Bu sunucuda henüz bir doğrulama rolü ayarlanmamış. Lütfen bir yöneticiye bildirin.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const role = interaction.guild.roles.cache.get(verifyRoleId) || await interaction.guild.roles.fetch(verifyRoleId).catch(() => null);
+        if (!role) {
+            return interaction.reply({
+                content: '⚠️ Ayarlı doğrulama rolü sunucuda bulunamadı. Lütfen bir yetkiliye bildirin.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        if (interaction.member.roles.cache.has(verifyRoleId)) {
+            return interaction.reply({
+                content: `ℹ️ Zaten doğrulanmışsın ve ${role} rolüne sahipsin!`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        try {
+            await interaction.member.roles.add(role);
+            return interaction.reply({
+                content: `✅ Başarıyla doğrulandın ve ${role} rolün verildi! Sunucumuza hoş geldin! 🎉`,
+                flags: MessageFlags.Ephemeral
+            });
+        } catch (err) {
+            console.error('Doğrulama rolü verme hatası:', err);
+            return interaction.reply({
+                content: `❌ Rol verilirken bir hata oluştu: Botun rol sırasının (rol hiyerarşisi) verilecek rolden daha üstte olduğundan emin olun.`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+    }
+
     // --- SÜPER LİG TAKIM SEÇİMİ ---
     if (interaction.isStringSelectMenu() && interaction.customId === 'superlig_takim_sec') {
         if (!interaction.guild) return;
