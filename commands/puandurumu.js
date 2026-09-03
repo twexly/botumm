@@ -248,8 +248,7 @@ module.exports = {
                     new TextDisplayBuilder().setContent(
                         `FlashScore verileriyle anlık olarak çekilen resmi lig sıralaması:\n\n` +
                         `${emojis.matter} **Kaynak:** [FlashScore Süper Lig](https://www.flashscore.com/football/turkey/super-lig/standings/2TRNmxYR/standings/overall/)\n` +
-                        `${emojis.matter} **Son Güncelleme:** Saat \`${nowStr}\`\n\n` +
-                        `> *Takımını seçmek için \`.superlig\` komutunu kullanabilirsin!*`
+                        `${emojis.matter} **Son Güncelleme:** Saat \`${nowStr}\``
                     )
                 )
                 .addMediaGalleryComponents(

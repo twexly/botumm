@@ -26,11 +26,12 @@ const SUPER_LIG_TEAMS = [
 module.exports = {
     name: 'superlig',
     aliases: ['süperlig', 'takim', 'takım', 'takimsec'],
+    modOnly: true,
     description: 'Süper Lig takım rollerini oluşturur ve interaktif takım seçim panelini gönderir.',
     async execute(message, client) {
-        if (!message.member.permissions.has(PermissionFlagsBits.ManageRoles) && !client.isMod(message.member)) {
+        if (!client.isModerator(message.member)) {
             return message.reply({
-                content: `${emojis.cross} Bu komutu kullanmak için \`Rolleri Yönet\` yetkisine sahip olmalısınız.`
+                content: `${emojis.cross} Bu komutu sadece sunucu sahibi, yöneticiler veya yetkili rolüne sahip kullanıcılar kullanabilir.`
             });
         }
 

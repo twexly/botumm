@@ -4,15 +4,12 @@ const emojis = require('../emojis');
 module.exports = {
     name: 'adminrole',
     aliases: ['adminrol', 'yetkilirol', 'modrole'],
+    modOnly: true,
     async execute(message, client, args) {
         if (!message.guild) return;
 
-        // Sadece Sunucu Sahibi veya Yönetici (Administrator) yetkisine sahip kişiler kullanabilir
-        const isOwner = message.guild.ownerId === message.author.id;
-        const isAdmin = message.member.permissions.has(PermissionFlagsBits.Administrator);
-
-        if (!isOwner && !isAdmin) {
-            return message.reply(`${emojis.cross} Bu komutu sadece sunucu sahibi veya Yönetici yetkisine sahip kullanıcılar kullanabilir.`);
+        if (!client.isModerator(message.member)) {
+            return message.reply(`${emojis.cross} Bu komutu sadece sunucu sahibi, yöneticiler veya yetkili rolüne sahip kullanıcılar kullanabilir.`);
         }
 
         const guildConfig = client.getGuildConfig(message.guild.id);

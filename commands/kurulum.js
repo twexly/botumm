@@ -101,6 +101,7 @@ async function ensureSetupChannel(guild) {
 module.exports = {
     name: 'kurulum',
     aliases: ['rehber', 'baslangic', 'setup'],
+    modOnly: true,
     sendSetupGuide,
     ensureSetupChannel,
     async execute(message, client, args) {

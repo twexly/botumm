@@ -242,6 +242,7 @@ client.isModerator = (member) => {
     if (modRoleId && member.roles?.cache?.has(modRoleId)) return true;
     return false;
 };
+client.isMod = client.isModerator;
 
 // Veritabanını Yükle
 if (fs.existsSync(dbPath)) {
