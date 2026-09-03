@@ -71,18 +71,39 @@ module.exports = {
                 totalVoiceTime += (Date.now() - activeJoin);
             }
 
-            const voiceHours = (totalVoiceTime / (1000 * 60 * 60)).toFixed(1);
+            let voiceText = '0 Sn Ses';
+            if (totalVoiceTime >= 3600000) {
+                voiceText = (totalVoiceTime / 3600000).toFixed(1) + ' Saat Ses';
+            } else if (totalVoiceTime >= 60000) {
+                voiceText = Math.floor(totalVoiceTime / 60000) + ' Dk Ses';
+            } else if (totalVoiceTime > 0) {
+                voiceText = Math.floor(totalVoiceTime / 1000) + ' Sn Ses';
+            }
+
             const neededXP = stats.level * 150 + 50;
             const xpPercent = Math.min(100, Math.floor((stats.xp / neededXP) * 100));
 
-            // 3. Sunucu Sıralamasını Hesapla
-            const allUsers = Array.from(client.userStats.entries()).map(([id, s]) => ({
-                id,
-                totalScore: (s.level || 1) * 10000 + (s.xp || 0)
-            }));
-            allUsers.sort((a, b) => b.totalScore - a.totalScore);
-            const rankIndex = allUsers.findIndex(u => u.id === userId);
-            const rankPos = rankIndex !== -1 ? rankIndex + 1 : allUsers.length + 1;
+            // 3. Sunucu Sıralamasını Hesapla (Sadece bu sunucudaki üyeler arasında)
+            await message.guild.members.fetch().catch(() => {});
+            const guildMemberIds = new Set(message.guild.members.cache.keys());
+
+            const guildUsers = Array.from(client.userStats?.entries() || [])
+                .filter(([id]) => guildMemberIds.has(id))
+                .map(([id, s]) => ({
+                    id,
+                    totalScore: (s.level || 1) * 100000 + (s.xp || 0)
+                }));
+
+            if (!guildUsers.some(u => u.id === userId)) {
+                guildUsers.push({
+                    id: userId,
+                    totalScore: (stats.level || 1) * 100000 + (stats.xp || 0)
+                });
+            }
+
+            guildUsers.sort((a, b) => b.totalScore - a.totalScore);
+            const rankIndex = guildUsers.findIndex(u => u.id === userId);
+            const rankPos = rankIndex !== -1 ? rankIndex + 1 : 1;
 
             // 4. Görsel Çizimi (Canvas 900x280)
             const canvas = createCanvas(900, 280);
@@ -189,7 +210,7 @@ module.exports = {
             ctx.fillText((stats.messages || 0).toLocaleString('tr-TR') + ' Mesaj', 246, 145);
 
             drawMicIcon(ctx, 420, 138, 11, '#a78bfa');
-            ctx.fillText(voiceHours + ' Saat Ses', 438, 145);
+            ctx.fillText(voiceText, 438, 145);
 
             // XP İlerleme Çubuğu (Progress Bar)
             const barX = 215;

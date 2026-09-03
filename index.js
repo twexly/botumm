@@ -21,8 +21,19 @@ const {
     ActivityType
 } = require('discord.js');
 const fs = require('fs');
-const { createCanvas } = require('canvas');
+const path = require('path');
+const { createCanvas, registerFont, loadImage } = require('canvas');
 require('dotenv').config();
+
+// Özel modern fontları yükle
+try {
+    const fontsDir = path.join(__dirname, 'assets', 'fonts');
+    if (fs.existsSync(fontsDir)) {
+        registerFont(path.join(fontsDir, 'Poppins-Bold.ttf'), { family: 'Poppins', weight: 'bold' });
+        registerFont(path.join(fontsDir, 'Poppins-SemiBold.ttf'), { family: 'Poppins', weight: '600' });
+        registerFont(path.join(fontsDir, 'Poppins-Medium.ttf'), { family: 'Poppins', weight: 'normal' });
+    }
+} catch (e) {}
 
 // Süre formatlayıcı (Örn: 2 saat 15 dakika)
 function formatDuration(ms) {
@@ -165,6 +176,17 @@ client.once('ready', () => {
     client.user.setPresence({
         activities: [{ name: '.yardım', type: ActivityType.Custom, state: '.yardım' }],
         status: 'online'
+    });
+
+    // Halihazırda ses kanalında bulunan üyelerin oturumlarını başlat
+    client.guilds.cache.forEach(guild => {
+        guild.channels.cache.filter(c => c.isVoiceBased()).forEach(channel => {
+            channel.members.filter(m => !m.user.bot).forEach(member => {
+                if (!client.voiceSessions.has(member.id)) {
+                    client.voiceSessions.set(member.id, Date.now());
+                }
+            });
+        });
     });
 });
 
@@ -676,9 +698,6 @@ client.on('messageCreate', async (message) => {
 });
 
 // --- YENİ EKLENEN: KARŞILAMA (WELCOME) SİSTEMİ ---
-const { loadImage } = require('canvas');
-const path = require('path');
-
 function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
@@ -707,7 +726,7 @@ client.on('guildMemberAdd', async (member) => {
         // 1. Arka Plan Görseli (1024x250 Doğrudan Şeffaf PNG)
         const bgPngPath = path.join(__dirname, 'assets', 'welcome_bg.png');
         if (fs.existsSync(bgPngPath)) {
-            const bgImage = await loadImage(bgPngPath);
+            const bgImage = await loadImage(fs.readFileSync(bgPngPath));
             ctx.drawImage(bgImage, 0, 0, 1024, 250);
         } else {
             // Şeffaf kırpma
@@ -720,68 +739,107 @@ client.on('guildMemberAdd', async (member) => {
             ctx.fillRect(0, 0, 1024, 250);
         }
 
-        // 2. Avatar
-        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
-        const avatar = await loadImage(avatarURL);
+        // 2. Avatar Çizimi ve Neon Glow Halka
+        const avSize = 144;
+        const avX = 58;
+        const avY = 53;
 
-        const avSize = 150;
-        const avX = 55;
-        const avY = 50;
-
-        ctx.save();
+        // Dış Glow Halkası
         ctx.beginPath();
-        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(avatar, avX, avY, avSize, avSize);
-        ctx.restore();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(167, 139, 250, 0.4)';
+        ctx.lineWidth = 6;
+        ctx.stroke();
 
-        // 3. Sağ Üst Üye Sayısı Rozeti
+        // İç İnce Halka
+        ctx.beginPath();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Avatar Görseli
+        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
+        try {
+            const avatar = await loadImage(avatarURL);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(avatar, avX, avY, avSize, avSize);
+            ctx.restore();
+        } catch (e) {
+            console.error("Avatar yükleme hatası:", e);
+        }
+
+        // 3. Sağ Üst Üye Sayısı Rozeti (Cam Efektli Pill Badge)
         const memberCount = member.guild.memberCount;
-        const badgeText = `${memberCount}. üye`;
-        ctx.font = 'bold 20px sans-serif';
+        const badgeText = `${memberCount}. ÜYE`;
+        ctx.font = 'bold 16px "Poppins", "Segoe UI", "Arial", sans-serif';
         const textWidth = ctx.measureText(badgeText).width;
         const badgePadX = 22;
         const badgeWidth = textWidth + badgePadX * 2;
-        const badgeHeight = 42;
-        const badgeX = 1024 - badgeWidth - 35;
+        const badgeHeight = 38;
+        const badgeX = 1024 - badgeWidth - 36;
         const badgeY = 28;
-        const badgeRadius = 21;
+        const badgeRadius = 19;
 
         drawRoundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.fillStyle = 'rgba(18, 16, 38, 0.65)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#e9d5ff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(badgeText, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
 
-        // 4. İsim ve Kullanıcı Adı
-        const displayName = member.displayName || member.user.globalName || member.user.username;
-        const username = `@${member.user.username}`;
+        // 4. Şık Tipografi ve İsim Alanı
+        const textStartX = 240;
 
+        // "HOŞ GELDİN" Rozeti
+        const welcomeTag = "HOŞ GELDİN";
+        ctx.font = 'bold 12px "Poppins", "Segoe UI", "Arial", sans-serif';
+        const tagWidth = ctx.measureText(welcomeTag).width + 20;
+        drawRoundRect(ctx, textStartX, 60, tagWidth, 24, 12);
+        ctx.fillStyle = 'rgba(192, 132, 252, 0.2)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#d8b4fe';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(welcomeTag, textStartX + tagWidth / 2, 72);
+
+        // Ana İsim (Display Name - Gölgeli ve Modern)
+        const displayName = member.displayName || member.user.globalName || member.user.username;
+        const maxTextWidth = badgeX - textStartX - 20;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
-
-        // Ana İsim (Display Name)
-        ctx.font = 'bold 36px sans-serif';
-        ctx.fillStyle = '#ffffff';
-        const maxTextWidth = badgeX - 235 - 20;
+        ctx.font = 'bold 40px "Poppins", "Segoe UI", "Arial", sans-serif';
         let fittedName = displayName;
         while (ctx.measureText(fittedName).width > maxTextWidth && fittedName.length > 3) {
             fittedName = fittedName.slice(0, -1);
         }
         if (fittedName !== displayName) fittedName += '...';
-        ctx.fillText(fittedName, 235, 120);
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 3;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(fittedName, textStartX, 136);
+        ctx.shadowColor = 'transparent';
 
         // Kullanıcı Adı (@username)
-        ctx.font = '22px sans-serif';
-        ctx.fillStyle = '#9e9bb0';
-        ctx.fillText(username, 235, 160);
+        ctx.font = '600 20px "Poppins", "Segoe UI", "Arial", sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        const username = `@${member.user.username}`;
+        ctx.fillText(username, textStartX, 174);
 
         const attachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'welcome.png' });
         
