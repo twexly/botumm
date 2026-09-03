@@ -7,6 +7,10 @@ const {
     AttachmentBuilder, 
     ContainerBuilder, 
     TextDisplayBuilder, 
+    SeparatorBuilder,
+    SectionBuilder,
+    ThumbnailBuilder,
+    MediaGalleryBuilder,
     MessageFlags, 
     AuditLogEvent,
     ChannelType,
@@ -1006,38 +1010,49 @@ client.on('interactionCreate', async (interaction) => {
                 ]
             });
 
-            const ticketEmbed = new EmbedBuilder()
-                .setTitle(`Destek Talebi — #${safeUsername}`)
-                .setDescription(
-                    `Hoş geldiniz ${interaction.user}!\n` +
-                    `Lütfen sorununuzu veya talebinizi detaylı bir şekilde açıklayın. Yetkili ekibimiz (<@&${ticketCfg.roleId}>) en kısa sürede sizinle ilgilenecektir.\n\n` +
-                    `Talebi yönetmek için aşağıdaki butonları kullanabilirsiniz:`
+            const ticketContainer = new ContainerBuilder();
+            const ticketSection = new SectionBuilder();
+            ticketSection.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`# ${ticketCfg.ticketTitle || 'Destek Talebi'} — #${safeUsername}`),
+                new TextDisplayBuilder().setContent(
+                    `${ticketCfg.ticketWelcome || 'Hoş geldiniz! Lütfen sorununuzu veya talebinizi detaylı bir şekilde açıklayın. Yetkili ekibimiz en kısa sürede sizinle ilgilenecektir.'}\n\n` +
+                    `> **Kullanıcı:** ${interaction.user}\n` +
+                    `> **Yetkili Ekip:** <@&${ticketCfg.roleId}>`
                 )
-                .setColor(0x5865f2)
-                .setTimestamp();
+            );
+            if (ticketCfg.thumbnail) {
+                ticketSection.setThumbnailAccessory(new ThumbnailBuilder().setURL(ticketCfg.thumbnail));
+            }
+            ticketContainer.addSectionComponents(ticketSection);
+
+            if (ticketCfg.banner) {
+                ticketContainer.addSeparatorComponents(new SeparatorBuilder());
+                const media = new MediaGalleryBuilder().addItems([{ media: { url: ticketCfg.banner } }]);
+                ticketContainer.addMediaGalleryComponents(media);
+            }
+
+            ticketContainer.addSeparatorComponents(new SeparatorBuilder());
 
             const controlRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('ticket_close')
                     .setLabel('Talebi Kapat')
-                    .setEmoji('🔒')
                     .setStyle(ButtonStyle.Danger),
                 new ButtonBuilder()
                     .setCustomId('ticket_transcript')
                     .setLabel('Transkript Al')
-                    .setEmoji('📄')
                     .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId('ticket_ping_staff')
                     .setLabel('Yetkili Çağır')
-                    .setEmoji('🔔')
                     .setStyle(ButtonStyle.Primary)
             );
+            ticketContainer.addActionRowComponents(controlRow);
 
             await ticketChannel.send({
                 content: `${interaction.user} <@&${ticketCfg.roleId}>`,
-                embeds: [ticketEmbed],
-                components: [controlRow]
+                components: [ticketContainer],
+                flags: MessageFlags.IsComponentsV2
             });
 
             await interaction.reply({
@@ -1093,16 +1108,21 @@ client.on('interactionCreate', async (interaction) => {
                 const logChan = interaction.guild.channels.cache.get(guildConfig.ticket.logChannelId);
                 if (logChan) {
                     const transFile = new AttachmentBuilder(Buffer.from(transcriptText, 'utf-8'), { name: `transcript-${interaction.channel.name}.txt` });
-                    const logEmbed = new EmbedBuilder()
-                        .setTitle('Destek Talebi Kapatıldı')
-                        .setDescription(
-                            `**Kanal:** \`${interaction.channel.name}\`\n` +
-                            `**Kapatan:** ${interaction.user} (\`${interaction.user.tag}\`)\n` +
-                            `**Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`
-                        )
-                        .setColor(0xe74c3c);
+                    const logContainer = new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent('# Destek Talebi Kapatıldı'),
+                            new TextDisplayBuilder().setContent(
+                                `• **Kanal:** \`${interaction.channel.name}\`\n` +
+                                `• **Kapatan:** ${interaction.user} (\`${interaction.user.tag}\`)\n` +
+                                `• **Kapanma Zamanı:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                            )
+                        );
 
-                    await logChan.send({ embeds: [logEmbed], files: [transFile] });
+                    await logChan.send({ 
+                        components: [logContainer], 
+                        files: [transFile],
+                        flags: MessageFlags.IsComponentsV2
+                    });
                 }
             }
         } catch (e) {
