@@ -172,6 +172,7 @@ function generateHelpBanner() {
 module.exports = {
     name: 'yardim',
     aliases: ['yardım', 'help'],
+    generateHelpBanner,
     async execute(message, client, args) {
         try {
             const bannerBuffer = generateHelpBanner();
@@ -193,8 +194,10 @@ module.exports = {
                     ),
                     new TextDisplayBuilder().setContent(
                         '### Yönetim & Moderasyon Komutları\n' +
+                        '• **`.adminrole <@rol/ID>`** : Botun yetkili/moderatör rolünü belirler (İlk adım).\n' +
+                        '• **`.cekilis <ödül> <kişi> <süre> <açıklama>`** : Şık ve butonlu çekiliş başlatır.\n' +
+                        '• **`.reroll [mesajID]`** : Sona eren çekiliş için yeniden kazanan belirler.\n' +
                         '• **`.ticket`** `[!ticket]` : Adım adım interaktif destek paneli kurulum sihirbazını başlatır.\n' +
-                        '• **`.adminrole <@rol/ID>`** : Botun yetkili/moderatör rolünü belirler.\n' +
                         '• **`.ozeloda`** : Gelişmiş butonlu özel ses odası yönetim panelini kurar.\n' +
                         '• **`.log`** : Sunucu ve moderasyon log kayıt kanallarını otomatik oluşturur.\n' +
                         '• **`.welcome <#kanal>`** : Yeni üyelere özel resimli hoş geldin karşılama kanalını ayarlar.\n' +

@@ -135,6 +135,102 @@ client.saveConfig = () => {
     fs.writeFileSync(configPath, JSON.stringify(client.serverConfig, null, 2));
 };
 
+// Çekiliş Veritabanı ve Zamanlayıcı
+const giveawaysPath = './giveaways.json';
+client.activeGiveaways = new Map();
+if (fs.existsSync(giveawaysPath)) {
+    try {
+        const rawG = JSON.parse(fs.readFileSync(giveawaysPath));
+        for (const [k, v] of Object.entries(rawG)) {
+            client.activeGiveaways.set(k, v);
+        }
+    } catch (e) {
+        console.error("Giveaways okunamadı:", e);
+    }
+}
+
+client.saveGiveaways = () => {
+    const obj = {};
+    for (const [k, v] of client.activeGiveaways.entries()) {
+        obj[k] = v;
+    }
+    fs.writeFileSync(giveawaysPath, JSON.stringify(obj, null, 2));
+};
+
+client.endGiveaway = async (giveawayId) => {
+    const g = client.activeGiveaways.get(giveawayId);
+    if (!g || g.ended) return;
+
+    g.ended = true;
+    client.saveGiveaways();
+
+    try {
+        const guild = client.guilds.cache.get(g.guildId);
+        if (!guild) return;
+        const channel = guild.channels.cache.get(g.channelId);
+        if (!channel) return;
+        const giveawayMsg = await channel.messages.fetch(g.messageId).catch(() => null);
+
+        let winnerText = 'Kazanan Belirlenemedi (Yetersiz Katılım)';
+        let announcementText = `🎉 **${g.prize}** çekilişine yeterli katılım olmadığı için kazanan belirlenemedi.`;
+        let winners = [];
+
+        if (g.participants.length > 0) {
+            const shuffled = [...g.participants].sort(() => 0.5 - Math.random());
+            const count = Math.min(g.winnerCount, shuffled.length);
+            winners = shuffled.slice(0, count);
+            winnerText = winners.map(id => `<@${id}>`).join(', ');
+            announcementText = `🎉 Tebrikler ${winnerText}! **${g.prize}** çekilişini kazandınız!`;
+        }
+
+        if (giveawayMsg) {
+            const endContainer = new ContainerBuilder()
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(`# 🎉 ÇEKİLİŞ SONA ERDİ: ${g.prize}`),
+                    new TextDisplayBuilder().setContent(
+                        `${g.description}\n\n` +
+                        `• **Kazanan(lar):** ${winnerText}\n` +
+                        `• **Bitiş Zamanı:** <t:${Math.floor(g.endTime / 1000)}:F>\n` +
+                        `• **Başlatan:** <@${g.authorId}>\n` +
+                        `• **Toplam Katılımcı:** ${g.participants.length}`
+                    )
+                )
+                .addSeparatorComponents(new SeparatorBuilder());
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`giveaway_ended_${g.id}`)
+                    .setLabel('Çekiliş Sona Erdi')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(true),
+                new ButtonBuilder()
+                    .setCustomId(`giveaway_reroll_${g.id}`)
+                    .setLabel('Yeniden Çek')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+            endContainer.addActionRowComponents(row);
+
+            await giveawayMsg.edit({
+                components: [endContainer],
+                flags: MessageFlags.IsComponentsV2
+            });
+        }
+
+        await channel.send({ content: announcementText });
+
+    } catch (err) {
+        console.error("Çekiliş sonlandırma hatası:", err);
+    }
+};
+
+client.scheduleGiveaway = (g) => {
+    if (!g || g.ended) return;
+    const remaining = Math.max(0, g.endTime - Date.now());
+    setTimeout(() => {
+        client.endGiveaway(g.id);
+    }, remaining);
+};
+
 // Yetkili / Moderatör Kontrolü (Sunucu Sahibi, Administrator veya Sunucunun Ayarlanan Yetkili Rolü)
 client.isModerator = (member) => {
     if (!member) return false;
@@ -195,6 +291,15 @@ client.once('ready', () => {
             });
         });
     });
+
+    // Aktif çekilişleri zamanla
+    if (client.activeGiveaways) {
+        for (const g of client.activeGiveaways.values()) {
+            if (!g.ended) {
+                client.scheduleGiveaway(g);
+            }
+        }
+    }
 });
 
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
@@ -534,6 +639,14 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => reply.delete().catch(() => {}), 6000);
                 return;
             }
+
+            // İlk komut olarak adminrole ayarlanmadıysa hatırlat
+            if (!guildConfig.modRole && command.name !== 'adminrole') {
+                message.channel.send({
+                    content: `⚠️ **Önemli Hatırlatma:** Bu sunucuda henüz bir yetkili rolü ayarlanmamış!\nLütfen öncelikle sunucu sahibi veya yöneticisi olarak **\`.adminrole <@rol veya ID>\`** komutunu kullanarak yetkili rolünü tanımlayın.`
+                }).catch(() => {});
+            }
+
             // Mod Log (Sunucu Bazlı)
             if (guildConfig.modLog) {
                 const modLog = message.guild.channels.cache.get(guildConfig.modLog);
@@ -938,6 +1051,86 @@ client.on('interactionCreate', async (interaction) => {
             `Karşılama arka planı başarıyla **Tema ${themeNum} — ${themeNames[themeNum]}** olarak ayarlandı.`;
 
         await interaction.update({ content, components: [row] });
+        return;
+    }
+
+    // --- ÇEKİLİŞ KATILIM VE REROLL ETKİLEŞİMLERİ ---
+    if (interaction.isButton() && interaction.customId.startsWith('giveaway_join_')) {
+        const giveawayId = interaction.customId.replace('giveaway_join_', '');
+        const g = client.activeGiveaways ? client.activeGiveaways.get(giveawayId) : null;
+
+        if (!g || g.ended) {
+            return interaction.reply({ content: 'Bu çekiliş sona ermiştir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const userId = interaction.user.id;
+        const exists = g.participants.includes(userId);
+
+        if (exists) {
+            g.participants = g.participants.filter(id => id !== userId);
+        } else {
+            g.participants.push(userId);
+        }
+        client.saveGiveaways();
+
+        // Buton etiketini güncelle
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`giveaway_join_${g.id}`)
+                .setLabel(`Katıl (${g.participants.length})`)
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        const container = new ContainerBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`# 🎉 ${g.prize}`),
+                new TextDisplayBuilder().setContent(
+                    `${g.description}\n\n` +
+                    `• **Kazanan Sayısı:** ${g.winnerCount} Kişi\n` +
+                    `• **Bitiş Zamanı:** <t:${Math.floor(g.endTime / 1000)}:R> (<t:${Math.floor(g.endTime / 1000)}:F>)\n` +
+                    `• **Başlatan:** <@${g.authorId}>\n` +
+                    `• **Katılımcı Sayısı:** ${g.participants.length}`
+                )
+            )
+            .addSeparatorComponents(new SeparatorBuilder());
+        container.addActionRowComponents(row);
+
+        await interaction.update({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+        });
+
+        if (exists) {
+            await interaction.followUp({ content: 'Çekilişten ayrıldınız.', flags: MessageFlags.Ephemeral });
+        } else {
+            await interaction.followUp({ content: 'Çekilişe başarıyla katıldınız! Bol şans dileriz. 🎉', flags: MessageFlags.Ephemeral });
+        }
+        return;
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('giveaway_reroll_')) {
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Yeniden kazanan belirleme işlemini sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const giveawayId = interaction.customId.replace('giveaway_reroll_', '');
+        const g = client.activeGiveaways ? client.activeGiveaways.get(giveawayId) : null;
+
+        if (!g) {
+            return interaction.reply({ content: 'Çekiliş bilgisi bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        if (g.participants.length === 0) {
+            return interaction.reply({ content: 'Katılımcı olmadığı için kazanan seçilemez.', flags: MessageFlags.Ephemeral });
+        }
+
+        const shuffled = [...g.participants].sort(() => 0.5 - Math.random());
+        const count = Math.min(g.winnerCount, shuffled.length);
+        const winners = shuffled.slice(0, count);
+        const winnerMentions = winners.map(id => `<@${id}>`).join(', ');
+
+        await interaction.reply({ content: `Yeniden çekiliş yapıldı!`, flags: MessageFlags.Ephemeral });
+        await interaction.channel.send({ content: `🎉 **[YENİDEN ÇEKİLİŞ]** Tebrikler ${winnerMentions}! **${g.prize}** çekilişinin yeni kazananı oldunuz!` });
         return;
     }
 
@@ -1409,6 +1602,48 @@ client.on('interactionCreate', async (interaction) => {
                 components: []
             });
         }
+    }
+});
+
+// Sunucuya Katılma Olayı (guildCreate): Otomatik bot-kurulum kanalı açıp rehberi gönderir
+client.on('guildCreate', async (guild) => {
+    try {
+        let setupChannel = guild.channels.cache.find(c => c.name === 'bot-kurulum' && c.type === ChannelType.GuildText);
+        if (!setupChannel) {
+            setupChannel = await guild.channels.create({
+                name: 'bot-kurulum',
+                type: ChannelType.GuildText,
+                topic: 'Bot ilk kurulum ve yönetim başlangıç kılavuzu kanalı.',
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        deny: [PermissionFlagsBits.ViewChannel]
+                    },
+                    {
+                        id: guild.ownerId,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.SendMessages,
+                            PermissionFlagsBits.ReadMessageHistory
+                        ]
+                    },
+                    {
+                        id: client.user.id,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.SendMessages,
+                            PermissionFlagsBits.AttachFiles,
+                            PermissionFlagsBits.EmbedLinks
+                        ]
+                    }
+                ]
+            });
+        }
+        const { sendSetupGuide } = require('./commands/kurulum');
+        await sendSetupGuide(guild, setupChannel);
+        console.log(`Yeni sunucuya katıldı ve kurulum rehberi gönderildi: ${guild.name} (${guild.id})`);
+    } catch(err) {
+        console.error("guildCreate kurulum kanalı hatası:", err);
     }
 });
 
