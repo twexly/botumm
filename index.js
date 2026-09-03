@@ -1213,6 +1213,16 @@ client.on('interactionCreate', async (interaction) => {
                 ]
             });
 
+            const isValidHttpUrl = (str) => {
+                if (!str || typeof str !== 'string') return false;
+                try {
+                    const u = new URL(str.trim().replace(/[<>]/g, ''));
+                    return u.protocol === 'http:' || u.protocol === 'https:';
+                } catch {
+                    return false;
+                }
+            };
+
             const ticketContainer = new ContainerBuilder();
             const ticketSection = new SectionBuilder();
             ticketSection.addTextDisplayComponents(
@@ -1223,15 +1233,26 @@ client.on('interactionCreate', async (interaction) => {
                     `> **Yetkili Ekip:** <@&${ticketCfg.roleId}>`
                 )
             );
-            if (ticketCfg.thumbnail) {
-                ticketSection.setThumbnailAccessory(new ThumbnailBuilder().setURL(ticketCfg.thumbnail));
+
+            if (ticketCfg.thumbnail && isValidHttpUrl(ticketCfg.thumbnail)) {
+                try {
+                    const cleanThumb = ticketCfg.thumbnail.trim().replace(/[<>]/g, '');
+                    ticketSection.setThumbnailAccessory(new ThumbnailBuilder().setURL(cleanThumb));
+                } catch (e) {
+                    console.error("Ticket thumbnail eklenemedi:", e.message);
+                }
             }
             ticketContainer.addSectionComponents(ticketSection);
 
-            if (ticketCfg.banner) {
-                ticketContainer.addSeparatorComponents(new SeparatorBuilder());
-                const media = new MediaGalleryBuilder().addItems([{ media: { url: ticketCfg.banner } }]);
-                ticketContainer.addMediaGalleryComponents(media);
+            if (ticketCfg.banner && isValidHttpUrl(ticketCfg.banner)) {
+                try {
+                    ticketContainer.addSeparatorComponents(new SeparatorBuilder());
+                    const cleanBanner = ticketCfg.banner.trim().replace(/[<>]/g, '');
+                    const media = new MediaGalleryBuilder().addItems([{ media: { url: cleanBanner } }]);
+                    ticketContainer.addMediaGalleryComponents(media);
+                } catch (e) {
+                    console.error("Ticket banner eklenemedi:", e.message);
+                }
             }
 
             ticketContainer.addSeparatorComponents(new SeparatorBuilder());
@@ -1257,11 +1278,31 @@ client.on('interactionCreate', async (interaction) => {
                 content: `${interaction.user} <@&${ticketCfg.roleId}>`
             }).catch(() => {});
 
-            // 2. V2 Container mesajını gönder (İçinde content olmadan!)
-            await ticketChannel.send({
-                components: [ticketContainer],
-                flags: MessageFlags.IsComponentsV2
-            });
+            // 2. V2 Container mesajını gönder (Hata durumunda sade fallback)
+            try {
+                await ticketChannel.send({
+                    components: [ticketContainer],
+                    flags: MessageFlags.IsComponentsV2
+                });
+            } catch (v2Err) {
+                console.error("ticketContainer V2 gönderme hatası, sade fallback deneniyor:", v2Err);
+                const fallbackContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(`# ${ticketCfg.ticketTitle || 'Destek Talebi'} — #${safeUsername}`),
+                        new TextDisplayBuilder().setContent(
+                            `${ticketCfg.ticketWelcome || 'Hoş geldiniz! Lütfen talebinizi açıklayın.'}\n\n` +
+                            `> **Kullanıcı:** ${interaction.user}\n` +
+                            `> **Yetkili Ekip:** <@&${ticketCfg.roleId}>`
+                        )
+                    )
+                    .addSeparatorComponents(new SeparatorBuilder())
+                    .addActionRowComponents(controlRow);
+
+                await ticketChannel.send({
+                    components: [fallbackContainer],
+                    flags: MessageFlags.IsComponentsV2
+                });
+            }
 
             await interaction.reply({
                 content: `Destek talebiniz başarıyla oluşturuldu: ${ticketChannel}`,

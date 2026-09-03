@@ -16,10 +16,15 @@ const path = require('path');
 const fs = require('fs');
 
 function sanitizeUrl(str) {
-    if (!str) return null;
+    if (!str || typeof str !== 'string') return null;
     const cleaned = str.replace(/[<>\s]/g, '').trim();
-    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
-        return cleaned;
+    try {
+        const u = new URL(cleaned);
+        if (u.protocol === 'http:' || u.protocol === 'https:') {
+            return u.href;
+        }
+    } catch {
+        return null;
     }
     return null;
 }
