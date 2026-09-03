@@ -1252,8 +1252,13 @@ client.on('interactionCreate', async (interaction) => {
             );
             ticketContainer.addActionRowComponents(controlRow);
 
+            // 1. Yetkili ve talep sahibine etiket bildirimi gönder
             await ticketChannel.send({
-                content: `${interaction.user} <@&${ticketCfg.roleId}>`,
+                content: `${interaction.user} <@&${ticketCfg.roleId}>`
+            }).catch(() => {});
+
+            // 2. V2 Container mesajını gönder (İçinde content olmadan!)
+            await ticketChannel.send({
                 components: [ticketContainer],
                 flags: MessageFlags.IsComponentsV2
             });
@@ -1266,7 +1271,7 @@ client.on('interactionCreate', async (interaction) => {
         } catch (err) {
             console.error("Ticket kanalı oluşturma hatası:", err);
             return interaction.reply({
-                content: 'Destek kanalı oluşturulurken bir yetki hatası meydana geldi.',
+                content: `Destek kanalı oluşturulurken bir hata meydana geldi: \`${err.message}\``,
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -1280,19 +1285,20 @@ client.on('interactionCreate', async (interaction) => {
             new ButtonBuilder().setCustomId('ticket_close_cancel').setLabel('İptal').setStyle(ButtonStyle.Secondary)
         );
         return interaction.reply({
-            content: 'Bu destek talebini kapatmak istediğinize emin misiniz? Kanal 5 saniye sonra kalıcı olarak silinecektir.',
-            components: [confirmRow]
+            content: 'Bu destek talebini kapatmak istediğinize emin misiniz? Kanal transkript alındıktan sonra kalıcı olarak silinecektir.',
+            components: [confirmRow],
+            flags: MessageFlags.Ephemeral
         });
     }
 
     // Kapatma İptal
     if (interaction.isButton() && interaction.customId === 'ticket_close_cancel') {
-        return interaction.message.delete().catch(() => {});
+        return interaction.update({ content: 'Kapatma işlemi iptal edildi.', components: [] });
     }
 
     // Kapatma Onaylandı
     if (interaction.isButton() && interaction.customId === 'ticket_close_confirm') {
-        await interaction.reply({ content: 'Destek talebi kapatılıyor. Transkript hazırlanıyor ve kanal 5 saniye içinde silinecektir...' });
+        await interaction.update({ content: 'Destek talebi kapatılıyor. Transkript hazırlanıyor ve kanal 5 saniye içinde silinecektir...', components: [] });
 
         const guildConfig = client.getGuildConfig(interaction.guild.id);
         try {
@@ -1300,15 +1306,18 @@ client.on('interactionCreate', async (interaction) => {
             const sorted = Array.from(messages.values()).reverse();
             let transcriptText = `--- DESTEK TALEBİ TRANSKRİPT: ${interaction.channel.name} ---\n`;
             transcriptText += `Tarih: ${new Date().toLocaleString('tr-TR')}\n`;
-            transcriptText += `Kapatan: ${interaction.user.tag} (${interaction.user.id})\n\n`;
+            transcriptText += `Kapatan: ${interaction.user.tag || interaction.user.username} (${interaction.user.id})\n\n`;
 
             sorted.forEach(m => {
                 const time = new Date(m.createdTimestamp).toLocaleTimeString('tr-TR');
-                transcriptText += `[${time}] ${m.author.tag}: ${m.content || '[Ek / Medya]'}\n`;
+                const authorName = m.author ? (m.author.tag || m.author.username) : 'Sistem';
+                transcriptText += `[${time}] ${authorName}: ${m.content || '[Ek / Medya / Buton]'}\n`;
             });
 
             if (guildConfig.ticket?.logChannelId) {
-                const logChan = interaction.guild.channels.cache.get(guildConfig.ticket.logChannelId);
+                const logChan = interaction.guild.channels.cache.get(guildConfig.ticket.logChannelId) || 
+                    await interaction.guild.channels.fetch(guildConfig.ticket.logChannelId).catch(() => null);
+
                 if (logChan) {
                     const transFile = new AttachmentBuilder(Buffer.from(transcriptText, 'utf-8'), { name: `transcript-${interaction.channel.name}.txt` });
                     const logContainer = new ContainerBuilder()
@@ -1316,7 +1325,7 @@ client.on('interactionCreate', async (interaction) => {
                             new TextDisplayBuilder().setContent('# Destek Talebi Kapatıldı'),
                             new TextDisplayBuilder().setContent(
                                 `• **Kanal:** \`${interaction.channel.name}\`\n` +
-                                `• **Kapatan:** ${interaction.user} (\`${interaction.user.tag}\`)\n` +
+                                `• **Kapatan:** ${interaction.user} (\`${interaction.user.tag || interaction.user.username}\`)\n` +
                                 `• **Kapanma Zamanı:** <t:${Math.floor(Date.now() / 1000)}:F>`
                             )
                         );
@@ -1325,6 +1334,9 @@ client.on('interactionCreate', async (interaction) => {
                         components: [logContainer], 
                         files: [transFile],
                         flags: MessageFlags.IsComponentsV2
+                    }).catch(async () => {
+                        // Yedek gönderim
+                        await logChan.send({ content: `**Destek Talebi Kapatıldı:** \`${interaction.channel.name}\``, files: [transFile] }).catch(() => {});
                     });
                 }
             }

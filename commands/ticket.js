@@ -15,6 +15,69 @@ const {
 const path = require('path');
 const fs = require('fs');
 
+function sanitizeUrl(str) {
+    if (!str) return null;
+    const cleaned = str.replace(/[<>\s]/g, '').trim();
+    if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+        return cleaned;
+    }
+    return null;
+}
+
+// Kanal bulma yardımcısı (Etiket, <#id>, ID, #isim, isim)
+async function resolveChannel(guild, input, replyMsg) {
+    if (replyMsg && replyMsg.mentions && replyMsg.mentions.channels && replyMsg.mentions.channels.size > 0) {
+        return replyMsg.mentions.channels.first();
+    }
+    if (!input) return null;
+    const cleanId = input.replace(/[<#>]/g, '').trim();
+    const cleanName = input.replace(/^#/, '').trim().toLowerCase();
+
+    const allChannels = await guild.channels.fetch().catch(() => guild.channels.cache);
+    if (/^\d{17,20}$/.test(cleanId)) {
+        const byId = allChannels.get(cleanId);
+        if (byId) return byId;
+    }
+
+    const byName = allChannels.find(c => c && c.name && c.name.toLowerCase() === cleanName);
+    return byName || null;
+}
+
+// Rol bulma yardımcısı (Etiket, <@&id>, ID, @isim, isim)
+async function resolveRole(guild, input, replyMsg) {
+    if (replyMsg && replyMsg.mentions && replyMsg.mentions.roles && replyMsg.mentions.roles.size > 0) {
+        return replyMsg.mentions.roles.first();
+    }
+    if (!input) return null;
+    const cleanId = input.replace(/[<@&>]/g, '').trim();
+    const cleanName = input.replace(/^@/, '').trim().toLowerCase();
+
+    const allRoles = await guild.roles.fetch().catch(() => guild.roles.cache);
+    if (/^\d{17,20}$/.test(cleanId)) {
+        const byId = allRoles.get(cleanId);
+        if (byId) return byId;
+    }
+
+    const byName = allRoles.find(r => r && r.name && r.name.toLowerCase() === cleanName);
+    return byName || null;
+}
+
+// Kategori bulma yardımcısı (ID, isim)
+async function resolveCategory(guild, input) {
+    if (!input) return null;
+    const cleanId = input.replace(/[<#>]/g, '').trim();
+    const cleanName = input.trim().toLowerCase();
+
+    const allChannels = await guild.channels.fetch().catch(() => guild.channels.cache);
+    if (/^\d{17,20}$/.test(cleanId)) {
+        const byId = allChannels.get(cleanId);
+        if (byId && byId.type === ChannelType.GuildCategory) return byId;
+    }
+
+    const byName = allChannels.find(c => c && c.type === ChannelType.GuildCategory && c.name && c.name.toLowerCase() === cleanName);
+    return byName || null;
+}
+
 module.exports = {
     name: 'ticket',
     aliases: ['destek'],
@@ -52,7 +115,7 @@ module.exports = {
             try {
                 const collected = await channel.awaitMessages({ filter, max: 1, time: 180000, errors: ['time'] });
                 const replyMsg = collected.first();
-                return { text: replyMsg.content.trim(), replyMsg };
+                return { text: replyMsg.content ? replyMsg.content.trim() : '', replyMsg };
             } catch (e) {
                 await channel.send("Süre dolduğu için ticket kurulum işlemi iptal edildi.");
                 return null;
@@ -75,9 +138,9 @@ module.exports = {
 
         if (step1.text.toLowerCase() !== 'geç' && step1.text.toLowerCase() !== 'atla') {
             if (step1.replyMsg.attachments.size > 0) {
-                wizardData.thumbnail = step1.replyMsg.attachments.first().url;
-            } else if (step1.text.startsWith('http://') || step1.text.startsWith('https://')) {
-                wizardData.thumbnail = step1.text;
+                wizardData.thumbnail = sanitizeUrl(step1.replyMsg.attachments.first().url);
+            } else {
+                wizardData.thumbnail = sanitizeUrl(step1.text);
             }
         }
 
@@ -94,9 +157,9 @@ module.exports = {
 
         if (step2.text.toLowerCase() !== 'geç' && step2.text.toLowerCase() !== 'atla') {
             if (step2.replyMsg.attachments.size > 0) {
-                wizardData.banner = step2.replyMsg.attachments.first().url;
-            } else if (step2.text.startsWith('http://') || step2.text.startsWith('https://')) {
-                wizardData.banner = step2.text;
+                wizardData.banner = sanitizeUrl(step2.replyMsg.attachments.first().url);
+            } else {
+                wizardData.banner = sanitizeUrl(step2.text);
             }
         }
 
@@ -184,32 +247,26 @@ module.exports = {
                 wizardData.categoryId = newCategory.id;
             } catch (err) {
                 console.error("Kategori oluşturma hatası:", err);
-                return channel.send("Kategori oluşturulurken bir yetki hatası meydana geldi.");
+                return channel.send("Kategori oluşturulurken bir yetki hatası meydana geldi. Lütfen botun yetkilerini kontrol edin.");
             }
         } else {
-            const foundCategory = message.guild.channels.cache.find(c => 
-                c.type === ChannelType.GuildCategory && 
-                (c.id === step8.text || c.name.toLowerCase() === step8.text.toLowerCase())
-            );
+            const foundCategory = await resolveCategory(message.guild, step8.text);
             if (foundCategory) {
                 wizardData.categoryId = foundCategory.id;
             } else {
-                return channel.send(`\`${step8.text}\` adında bir kategori bulunamadı. Lütfen komutu baştan başlatın.`);
+                return channel.send(`\`${step8.text}\` kategorisi bulunamadı. Lütfen komutu baştan başlatın.`);
             }
         }
 
         // 9. ADIM: YETKİLİ / DESTEK EKİBİ ROLÜ
         const step9Prompt = `## 🎟️ Ticket Kurulum Sihirbazı — 9. Adım: Yetkili / Destek Ekibi Rolü\n` +
-            `Açılan biletleri görebilecek ve yanıtlayabilecek yetkili rolünü etiketleyin (**@rol**) veya rol ID'sini yazın.`;
+            `Açılan biletleri görebilecek ve yanıtlayabilecek yetkili rolünü etiketleyin (**@rol**), rol ID'sini veya adını yazın.`;
 
         const step9 = await askQuestion(step9Prompt);
         if (!step9) return;
         if (step9.text.toLowerCase() === 'iptal') return channel.send("Ticket kurulumu iptal edildi.");
 
-        let targetRole = step9.replyMsg.mentions.roles.first() || 
-            message.guild.roles.cache.get(step9.text) || 
-            message.guild.roles.cache.find(r => r.name.toLowerCase() === step9.text.toLowerCase());
-
+        const targetRole = await resolveRole(message.guild, step9.text, step9.replyMsg);
         if (!targetRole) {
             return channel.send("Belirtilen rol sunucuda bulunamadı. Lütfen komutu baştan başlatın.");
         }
@@ -217,31 +274,29 @@ module.exports = {
 
         // 10. ADIM: PANELİN GÖNDERİLECEĞİ KANAL
         const step10Prompt = `## 🎟️ Ticket Kurulum Sihirbazı — 10. Adım: Panel Kanalı\n` +
-            `Kullanıcıların destek talebi açacağı panelin gönderileceği kanalı etiketleyin. (Örnek: \`#destek\`)`;
+            `Kullanıcıların destek talebi açacağı panelin gönderileceği kanalı etiketleyin (**#kanal**) veya adını/ID'sini yazın.`;
 
         const step10 = await askQuestion(step10Prompt);
         if (!step10) return;
         if (step10.text.toLowerCase() === 'iptal') return channel.send("Ticket kurulumu iptal edildi.");
 
-        let targetChannel = step10.replyMsg.mentions.channels.first() || 
-            message.guild.channels.cache.get(step10.text);
-
+        const targetChannel = await resolveChannel(message.guild, step10.text, step10.replyMsg);
         if (!targetChannel) {
-            return channel.send("Belirtilen kanal bulunamadı. Lütfen komutu baştan başlatın.");
+            return channel.send("Belirtilen panel kanalı bulunamadı. Lütfen komutu baştan başlatın.");
         }
         wizardData.panelChannelId = targetChannel.id;
 
         // 11. ADIM: LOG KANALI (İSTEĞE BAĞLI)
         const step11Prompt = `## 🎟️ Ticket Kurulum Sihirbazı — Ek Adım: Log Kanalı\n` +
-            `Kapatılan biletlerin transkript kayıtlarının gönderileceği kanalı etiketleyin. (Örnek: \`#ticket-log\`)\n` +
-            `*(İstemiyorsanız **\`geç\`** yazabilirsiniz)*`;
+            `Kapatılan biletlerin transkript kayıtlarının gönderileceği kanalı etiketleyin (**#kanal**) veya adını/ID'sini yazın.\n` +
+            `*(İstemiyorsanız **\`geç\`** veya **\`atla\`** yazabilirsiniz)*`;
 
         const step11 = await askQuestion(step11Prompt);
         if (!step11) return;
         if (step11.text.toLowerCase() === 'iptal') return channel.send("Ticket kurulumu iptal edildi.");
 
         if (step11.text.toLowerCase() !== 'geç' && step11.text.toLowerCase() !== 'atla') {
-            const logChannel = step11.replyMsg.mentions.channels.first() || message.guild.channels.cache.get(step11.text);
+            const logChannel = await resolveChannel(message.guild, step11.text, step11.replyMsg);
             if (logChannel) {
                 wizardData.logChannelId = logChannel.id;
             }
@@ -262,14 +317,22 @@ module.exports = {
                 new TextDisplayBuilder().setContent(wizardData.description)
             );
             if (wizardData.thumbnail) {
-                section.setThumbnailAccessory(new ThumbnailBuilder().setURL(wizardData.thumbnail));
+                try {
+                    section.setThumbnailAccessory(new ThumbnailBuilder().setURL(wizardData.thumbnail));
+                } catch (e) {
+                    console.error("ThumbnailBuilder accessory hatası:", e);
+                }
             }
             panelContainer.addSectionComponents(section);
 
             if (wizardData.banner) {
-                panelContainer.addSeparatorComponents(new SeparatorBuilder());
-                const media = new MediaGalleryBuilder().addItems([{ media: { url: wizardData.banner } }]);
-                panelContainer.addMediaGalleryComponents(media);
+                try {
+                    panelContainer.addSeparatorComponents(new SeparatorBuilder());
+                    const media = new MediaGalleryBuilder().addItems([{ media: { url: wizardData.banner } }]);
+                    panelContainer.addMediaGalleryComponents(media);
+                } catch (e) {
+                    console.error("MediaGalleryBuilder hatası:", e);
+                }
             }
 
             panelContainer.addSeparatorComponents(new SeparatorBuilder());
@@ -277,15 +340,32 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('ticket_create')
-                    .setLabel(wizardData.buttonText)
+                    .setLabel(wizardData.buttonText || 'Destek Talebi Aç')
                     .setStyle(ButtonStyle.Primary)
             );
             panelContainer.addActionRowComponents(row);
 
-            await targetChannel.send({
-                components: [panelContainer],
-                flags: MessageFlags.IsComponentsV2
-            });
+            // Paneli gönder (Hata durumunda yedek sade Container ile dene)
+            try {
+                await targetChannel.send({
+                    components: [panelContainer],
+                    flags: MessageFlags.IsComponentsV2
+                });
+            } catch (sendErr) {
+                console.error("Components V2 gönderme hatası, sade fallback deneniyor:", sendErr);
+                const fallbackContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(`# ${wizardData.title}`),
+                        new TextDisplayBuilder().setContent(wizardData.description)
+                    )
+                    .addSeparatorComponents(new SeparatorBuilder())
+                    .addActionRowComponents(row);
+
+                await targetChannel.send({
+                    components: [fallbackContainer],
+                    flags: MessageFlags.IsComponentsV2
+                });
+            }
 
             const finishContainer = new ContainerBuilder()
                 .addTextDisplayComponents(
@@ -309,7 +389,7 @@ module.exports = {
 
         } catch (error) {
             console.error("Ticket paneli gönderme hatası:", error);
-            channel.send("Panel oluşturulurken veya kaydedilirken bir hata oluştu.");
+            channel.send(`Panel oluşturulurken bir hata oluştu: \`${error.message}\``);
         }
     }
 };
