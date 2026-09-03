@@ -94,6 +94,7 @@ function generateHelpBanner() {
     const generalCmds = [
         { name: '.rank', desc: 'Seviye, XP ve sıralama kartını gösterir' },
         { name: '.toplevel', desc: 'En aktif üyelerin liderlik sıralaması' },
+        { name: '.say', desc: 'Üye, kanal, rol ve boost sayım kartı' },
         { name: '.ship', desc: 'İki üye arasındaki aşk ve uyum yüzdesi' },
         { name: '.ai <soru>', desc: 'Yapay zeka ile anlık soru-cevap sohbeti' },
         { name: '.kurulum', desc: 'Rehber ve başlangıç kanalını oluşturur' },
@@ -102,7 +103,7 @@ function generateHelpBanner() {
 
     ctx.textAlign = 'left';
     generalCmds.forEach((cmd, i) => {
-        const itemY = colY + 74 + i * 54;
+        const itemY = colY + 68 + i * 48;
         drawRoundRect(ctx, leftX + 20, itemY - 18, 100, 28, 8);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
         ctx.fill();
@@ -209,6 +210,7 @@ module.exports = {
                     '### 🎮 Genel & Eğlence Komutları\n' +
                     '• **`.rank`** : Seviye, XP ve sunucu sıralama kartınızı gösterir.\n' +
                     '• **`.toplevel`** : Sunucunun en aktif üyelerini (mesaj, ses, seviye) listeler.\n' +
+                    '• **`.say`** : Sunucudaki üye, kanal, rol ve boost istatistiklerini resimli kartla gösterir.\n' +
                     '• **`.ship <@üye>`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n' +
                     '• **`.ai <soru>`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n' +
                     '• **`.yardım`** : Tüm komut rehberini ve bu menüyü açar.'
