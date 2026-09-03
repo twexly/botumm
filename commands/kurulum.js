@@ -10,15 +10,17 @@ const {
 } = require('discord.js');
 const { generateHelpBanner } = require('./yardim');
 
+const emojis = require('../emojis');
+
 async function sendSetupGuide(guild, targetChannel) {
     const bannerBuffer = generateHelpBanner();
     const attachment = new AttachmentBuilder(bannerBuffer, { name: 'help_banner.png' });
 
     const container = new ContainerBuilder()
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`# 🚀 ${guild.name} — Bot Kurulum ve Başlangıç Rehberi`),
+            new TextDisplayBuilder().setContent(`# ${emojis.settings} ${guild.name} — Bot Kurulum ve Başlangıç Rehberi`),
             new TextDisplayBuilder().setContent(
-                `Bot sunucunuza başarıyla eklendi! Sunucunuzu en verimli ve güvenli şekilde yapılandırabilmeniz için adım adım rehber aşağıda hazırlanmıştır.`
+                `${emojis.hello} **Bot sunucunuza başarıyla eklendi!** Sunucunuzu en verimli ve güvenli şekilde yapılandırabilmeniz için adım adım rehber aşağıda hazırlanmıştır.`
             )
         );
 
@@ -38,13 +40,15 @@ async function sendSetupGuide(guild, targetChannel) {
         new TextDisplayBuilder().setContent(
             `### 📋 Sunucunuz İçin Önerilen Sıradaki Kurulumlar\n` +
             `Yetkili rolünü ayarladıktan sonra aşağıdaki sistemleri sırayla aktif edebilirsiniz:\n\n` +
-            `• **1. Log Sistemi:** \`.log\` yazarak moderasyon ve sunucu denetim log kanallarını tek tıkla otomatik oluşturun.\n` +
-            `• **2. Hoş Geldin Sistemi:** \`.welcome #kanal\` yazarak 3 şık temalı resimli karşılama panelini ayarlayın.\n` +
-            `• **3. Ticket (Destek) Sistemi:** \`.ticket\` yazarak adım adım görsel kılavuzlu destek paneli kurun.\n` +
-            `• **4. Özel Ses Odaları:** \`.ozeloda\` yazarak butonlu ses kanalı yönetim panelini kurun.\n` +
-            `• **5. Çekiliş Sistemi:** \`.cekilis <ödül> <kişisayısı> <süre> <açıklama>\` ile butonlu çekiliş düzenleyin.\n` +
-            `• **6. Reklam Koruması:** \`.offadd\` yazarak otomatik link ve davet engellemesini açın.\n` +
-            `• **7. Komut Rehberi:** Tüm komutları ve detayları incelemek için dilediğiniz zaman \`.yardım\` yazabilirsiniz.`
+            `• ${emojis.matter} **1. Log Sistemi:** \`.log\` yazarak moderasyon ve sunucu denetim log kanallarını tek tıkla otomatik oluşturun.\n` +
+            `• ${emojis.matter} **2. Hoş Geldin Sistemi:** \`.welcome #kanal\` yazarak 3 şık temalı resimli karşılama panelini ayarlayın.\n` +
+            `• ${emojis.matter} **3. Ticket (Destek) Sistemi:** \`.ticket\` yazarak adım adım görsel kılavuzlu destek paneli kurun.\n` +
+            `• ${emojis.matter} **4. Özel Ses Odaları:** \`.ozeloda\` yazarak butonlu ses kanalı yönetim panelini kurun.\n` +
+            `• ${emojis.matter} **5. Çekiliş Sistemi:** \`.cekilis <ödül> <kişisayısı> <süre> <açıklama>\` ile butonlu çekiliş düzenleyin.\n` +
+            `• ${emojis.matter} **6. Sunucu Sayım Kartı:** \`.say\` yazarak anlık üye, kanal, rol ve boost istatistiklerini görün.\n` +
+            `• ${emojis.matter} **7. Reklam Koruması:** \`.offadd\` yazarak otomatik link ve davet engellemesini açın.\n` +
+            `• ${emojis.matter} **8. Geliştirici Bilgisi:** \`.dev\` yazarak bot yapımcısı (${emojis.developer} twexly) bilgilerini görün.\n` +
+            `• ${emojis.matter} **9. Komut Rehberi:** Tüm komutları ve detayları incelemek için dilediğiniz zaman \`.yardım\` yazabilirsiniz.`
         )
     );
 

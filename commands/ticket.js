@@ -14,6 +14,7 @@ const {
 } = require('discord.js');
 const path = require('path');
 const fs = require('fs');
+const emojis = require('../emojis');
 
 function sanitizeUrl(str) {
     if (!str || typeof str !== 'string') return null;
@@ -374,16 +375,16 @@ module.exports = {
 
             const finishContainer = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('# ✅ Ticket Sistemi Başarıyla Kuruldu'),
+                    new TextDisplayBuilder().setContent(`# ${emojis.tick} Ticket Sistemi Başarıyla Kuruldu`),
                     new TextDisplayBuilder().setContent(
                         `Destek paneli başarıyla ${targetChannel} kanalına gönderildi.\n\n` +
-                        `• **Destek Kategorisi:** <#${wizardData.categoryId}>\n` +
-                        `• **Yetkili Rolü:** <@&${wizardData.roleId}>\n` +
-                        `• **Panel Buton Yazısı:** \`${wizardData.buttonText}\`\n` +
-                        `• **Bilet İçi Başlık:** \`${wizardData.ticketTitle}\`\n` +
-                        `• **Log Kanalı:** ${wizardData.logChannelId ? `<#${wizardData.logChannelId}>` : 'Ayarlanmadı'}\n` +
-                        `• **Thumbnail:** ${wizardData.thumbnail ? `[Görsel Bağlantısı](${wizardData.thumbnail})` : 'Kullanılmadı'}\n` +
-                        `• **Büyük Resim:** ${wizardData.banner ? `[Görsel Bağlantısı](${wizardData.banner})` : 'Kullanılmadı'}`
+                        `${emojis.matter} **Destek Kategorisi:** <#${wizardData.categoryId}>\n` +
+                        `${emojis.matter} **Yetkili Rolü:** <@&${wizardData.roleId}>\n` +
+                        `${emojis.matter} **Panel Buton Yazısı:** \`${wizardData.buttonText}\`\n` +
+                        `${emojis.matter} **Bilet İçi Başlık:** \`${wizardData.ticketTitle}\`\n` +
+                        `${emojis.matter} **Log Kanalı:** ${wizardData.logChannelId ? `<#${wizardData.logChannelId}>` : 'Ayarlanmadı'}\n` +
+                        `${emojis.matter} **Thumbnail:** ${wizardData.thumbnail ? `[Görsel Bağlantısı](${wizardData.thumbnail})` : 'Kullanılmadı'}\n` +
+                        `${emojis.matter} **Büyük Resim:** ${wizardData.banner ? `[Görsel Bağlantısı](${wizardData.banner})` : 'Kullanılmadı'}`
                     )
                 );
 

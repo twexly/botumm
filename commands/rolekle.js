@@ -1,4 +1,5 @@
 const { ContainerBuilder, TextDisplayBuilder, MessageFlags } = require('discord.js');
+const emojis = require('../emojis');
 
 module.exports = {
     name: 'rolekle',
@@ -9,7 +10,7 @@ module.exports = {
             (args[0] ? await message.guild.members.fetch(args[0]).catch(() => null) : null);
 
         if (!targetMember) {
-            return message.reply("Lütfen rol verilecek kullanıcıyı etiketleyin veya ID'sini girin. (Örnek: .rolekle @kullanıcı @rol)");
+            return message.reply(`${emojis.cross} Lütfen rol verilecek kullanıcıyı etiketleyin veya ID'sini girin. (Örnek: \`.rolekle @kullanıcı @rol\`)`);
         }
 
         // 2. Rolü Bul (Etiket, ID veya İsim ile)
@@ -20,17 +21,17 @@ module.exports = {
         }
 
         if (!targetRole) {
-            return message.reply("Lütfen geçerli bir rol etiketleyin, ID'sini yazın veya adını girin.");
+            return message.reply(`${emojis.cross} Lütfen geçerli bir rol etiketleyin, ID'sini yazın veya adını girin.`);
         }
 
         // 3. Yetki & Hiyerarşi Kontrolleri
         if (targetMember.roles.cache.has(targetRole.id)) {
-            return message.reply(`**${targetMember.user.tag}** kullanıcısı zaten ${targetRole} rolüne sahip.`);
+            return message.reply(`${emojis.cross} **${targetMember.user.tag}** kullanıcısı zaten ${targetRole} rolüne sahip.`);
         }
 
         const botMember = message.guild.members.me;
         if (targetRole.position >= botMember.roles.highest.position) {
-            return message.reply("Bu rol benim en yüksek rolümden üstte veya eşit olduğu için verilemiyor.");
+            return message.reply(`${emojis.cross} Bu rol benim en yüksek rolümden üstte veya eşit olduğu için verilemiyor.`);
         }
 
         // 4. Rolü Ver
@@ -39,12 +40,12 @@ module.exports = {
 
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`## Rol Başarıyla Verildi`),
+                    new TextDisplayBuilder().setContent(`## ${emojis.plus} Rol Başarıyla Verildi`),
                     new TextDisplayBuilder().setContent(
-                        `**Kullanıcı:** ${targetMember} (\`${targetMember.user.tag}\`)\n` +
-                        `**Verilen Rol:** ${targetRole} (\`${targetRole.name}\`)\n` +
-                        `**Yetkili:** ${message.author} (\`${message.author.tag}\`)\n` +
-                        `**Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                        `${emojis.matter} **Kullanıcı:** ${targetMember} (\`${targetMember.user.tag}\`)\n` +
+                        `${emojis.matter} **Verilen Rol:** ${targetRole} (\`${targetRole.name}\`)\n` +
+                        `${emojis.matter} **Yetkili:** ${message.author} (\`${message.author.tag}\`)\n` +
+                        `${emojis.matter} **Tarih:** <t:${Math.floor(Date.now() / 1000)}:F>`
                     )
                 );
 
@@ -53,7 +54,7 @@ module.exports = {
 
         } catch (error) {
             console.error("Rol ekleme hatası:", error);
-            message.reply("Rol verilirken bir hata oluştu. Botun 'Rolleri Yönet' yetkisini ve rol sırasını kontrol edin.");
+            message.reply(`${emojis.cross} Rol verilirken bir hata oluştu. Botun 'Rolleri Yönet' yetkisini ve rol sırasını kontrol edin.`);
         }
     }
 };

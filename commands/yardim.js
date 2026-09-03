@@ -1,5 +1,6 @@
 const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, MediaGalleryBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
 const { createCanvas } = require('canvas');
+const emojis = require('../emojis');
 
 function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
@@ -186,34 +187,35 @@ module.exports = {
 
             container.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
-                    '### 🛠️ Yönetim & Kurulum Sistemleri\n' +
-                    '• **`.adminrole <@rol/ID>`** : Botun yetkili rolünü tanımlar (**İlk Zorunlu Adım**).\n' +
-                    '• **`.kurulum`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur.\n' +
-                    '• **`.cekilis <ödül> <kişi> <süre> <açıklama>`** : Butonlu şık çekiliş başlatır.\n' +
-                    '• **`.reroll [mesajID]`** : Sona eren çekiliş için yeniden kazanan belirler.\n' +
-                    '• **`.ticket`** : Görsel kılavuzlu adım adım bilet paneli kurar.\n' +
-                    '• **`.welcome <#kanal>`** : 3 temalı hoş geldin resimli karşılama kanalını ayarlar.\n' +
-                    '• **`.ozeloda`** : Butonlu özel ses odası yönetim panelini kurar.\n' +
-                    '• **`.log`** : Moderasyon ve sunucu denetim log kanallarını otomatik açar.\n' +
-                    '• **`.level <#kanal>`** : Seviye atlama kutlama kanalını ayarlar.\n' +
-                    '• **`.offadd`** : Otomatik reklam ve link engelleme korumasını açar/kapatır.'
+                    `### ${emojis.settings} Yönetim & Kurulum Sistemleri\n` +
+                    `${emojis.matter} **\`.adminrole <@rol/ID>\`** : Botun yetkili rolünü tanımlar (**İlk Zorunlu Adım**).\n` +
+                    `${emojis.matter} **\`.kurulum\`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur.\n` +
+                    `${emojis.matter} **\`.cekilis <ödül> <kişi> <süre> <açıklama>\`** : Butonlu şık çekiliş başlatır.\n` +
+                    `${emojis.matter} **\`.reroll [mesajID]\`** : Sona eren çekiliş için yeniden kazanan belirler.\n` +
+                    `${emojis.matter} **\`.ticket\`** : Görsel kılavuzlu adım adım bilet paneli kurar.\n` +
+                    `${emojis.matter} **\`.welcome <#kanal>\`** : 3 temalı hoş geldin resimli karşılama kanalını ayarlar.\n` +
+                    `${emojis.matter} **\`.ozeloda\`** : Butonlu özel ses odası yönetim panelini kurar.\n` +
+                    `${emojis.matter} **\`.log\`** : Moderasyon ve sunucu denetim log kanallarını otomatik açar.\n` +
+                    `${emojis.matter} **\`.level <#kanal>\`** : Seviye atlama kutlama kanalını ayarlar.\n` +
+                    `${emojis.matter} **\`.offadd\`** : Otomatik reklam ve link engelleme korumasını açar/kapatır.`
                 ),
                 new TextDisplayBuilder().setContent(
-                    '### 🛡️ Moderasyon & Güvenlik Komutları\n' +
-                    '• **`.rolekle <@üye> <@rol>`** : Üyeye güvenli şekilde rol verir.\n' +
-                    '• **`.ban <@üye>`** / **`.kick <@üye>`** : Kullanıcıyı sunucudan yasaklar veya atar.\n' +
-                    '• **`.lock`** / **`.unlock`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar.\n' +
-                    '• **`.slowmode <saniye>`** : Kanal için yavaş mod süresini ayarlar.\n' +
-                    '• **`.nuke`** : Kanalı klonlayıp tüm eski mesajları temizler.'
+                    `### ${emojis.banhammer} Moderasyon & Güvenlik Komutları\n` +
+                    `${emojis.matter} **\`.rolekle <@üye> <@rol>\`** : Üyeye güvenli şekilde rol verir.\n` +
+                    `${emojis.matter} **\`.ban <@üye>\`** / **\`.kick <@üye>\`** : Kullanıcıyı sunucudan yasaklar veya atar.\n` +
+                    `${emojis.matter} **\`.lock\`** / **\`.unlock\`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar.\n` +
+                    `${emojis.matter} **\`.slowmode <saniye>\`** : Kanal için yavaş mod süresini ayarlar.\n` +
+                    `${emojis.matter} **\`.nuke\`** : Kanalı klonlayıp tüm eski mesajları temizler.`
                 ),
                 new TextDisplayBuilder().setContent(
                     '### 🎮 Genel & Eğlence Komutları\n' +
-                    '• **`.rank`** : Seviye, XP ve sunucu sıralama kartınızı gösterir.\n' +
-                    '• **`.toplevel`** : Sunucunun en aktif üyelerini (mesaj, ses, seviye) listeler.\n' +
-                    '• **`.say`** : Sunucudaki üye, kanal, rol ve boost istatistiklerini resimli kartla gösterir.\n' +
-                    '• **`.ship <@üye>`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n' +
-                    '• **`.ai <soru>`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n' +
-                    '• **`.yardım`** : Tüm komut rehberini ve bu menüyü açar.'
+                    `${emojis.matter} **\`.rank\`** : Seviye, XP ve sunucu sıralama kartınızı gösterir.\n` +
+                    `${emojis.matter} **\`.toplevel\`** : Sunucunun en aktif üyelerini (mesaj, ses, seviye) listeler.\n` +
+                    `${emojis.matter} **\`.say\`** : Sunucudaki üye, kanal, rol ve boost istatistiklerini resimli kartla gösterir.\n` +
+                    `${emojis.matter} **\`.dev\`** : Bot geliştiricisi (${emojis.developer} twexly) bilgilerini gösterir.\n` +
+                    `${emojis.matter} **\`.ship <@üye>\`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n` +
+                    `${emojis.matter} **\`.ai <soru>\`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n` +
+                    `${emojis.matter} **\`.yardım\`** : Tüm komut rehberini ve bu menüyü açar.`
                 )
             );
 

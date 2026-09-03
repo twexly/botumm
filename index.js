@@ -28,6 +28,7 @@ const fs = require('fs');
 const path = require('path');
 const { createCanvas, registerFont, loadImage } = require('canvas');
 require('dotenv').config();
+const emojis = require('./emojis');
 
 // Özel modern fontları yükle
 try {
@@ -412,13 +413,14 @@ async function sendLog(guild, title, fields = []) {
     if (!guild) return;
     const guildConfig = client.getGuildConfig(guild.id);
     if (!guildConfig || !guildConfig.serverLog) return;
-    const logChannel = guild.channels.cache.get(guildConfig.serverLog);
+    const logChannel = guild.channels.cache.get(guildConfig.serverLog) || await guild.channels.fetch(guildConfig.serverLog).catch(() => null);
     if (!logChannel) return;
 
     try {
         const timestamp = Math.floor(Date.now() / 1000);
-        const lines = Array.isArray(fields) ? [...fields] : [fields];
-        lines.push(`**İşlem Zamanı:** <t:${timestamp}:F> (<t:${timestamp}:R>)`);
+        const rawLines = Array.isArray(fields) ? [...fields] : [fields];
+        const lines = rawLines.map(line => line.startsWith(emojis.matter) ? line : `${emojis.matter} ${line}`);
+        lines.push(`${emojis.matter} **İşlem Zamanı:** <t:${timestamp}:F> (<t:${timestamp}:R>)`);
 
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
@@ -435,7 +437,7 @@ async function sendLog(guild, title, fields = []) {
 client.on('messageDelete', async message => {
     if (message.author?.bot || !message.guild) return;
     const executor = await getAuditExecutor(message.guild, AuditLogEvent.MessageDelete, message.author?.id);
-    sendLog(message.guild, 'Mesaj Silindi', [
+    sendLog(message.guild, `${emojis.minus} Mesaj Silindi`, [
         `**Mesaj Sahibi:** ${message.author} (\`${message.author?.tag}\` - \`${message.author?.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Kullanıcının Kendisi / Bilinmiyor'}`,
         `**Kanal:** ${message.channel} (\`${message.channel?.name}\`)`,
@@ -445,7 +447,7 @@ client.on('messageDelete', async message => {
 
 client.on('messageUpdate', (oldMessage, newMessage) => {
     if (oldMessage.author?.bot || !newMessage.guild || oldMessage.content === newMessage.content) return;
-    sendLog(newMessage.guild, 'Mesaj Düzenlendi', [
+    sendLog(newMessage.guild, `${emojis.settings} Mesaj Düzenlendi`, [
         `**Mesaj Sahibi:** ${newMessage.author} (\`${newMessage.author?.tag}\` - \`${newMessage.author?.id}\`)`,
         `**Kanal:** ${newMessage.channel} (\`${newMessage.channel?.name}\`)`,
         `**Mesaj Bağlantısı:** [Mesaja Git](${newMessage.url})`,
@@ -457,7 +459,7 @@ client.on('messageUpdate', (oldMessage, newMessage) => {
 client.on('guildMemberAdd', member => {
     if (!member.guild) return;
     const createdTimestamp = Math.floor(member.user.createdTimestamp / 1000);
-    sendLog(member.guild, 'Sunucuya Yeni Üye Katıldı', [
+    sendLog(member.guild, `${emojis.hello} Sunucuya Yeni Üye Katıldı`, [
         `**Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
         `**Hesap Oluşturulma:** <t:${createdTimestamp}:F> (<t:${createdTimestamp}:R>)`,
         `**Güncel Sunucu Üye Sayısı:** \`${member.guild.memberCount}\``
@@ -470,13 +472,13 @@ client.on('guildMemberRemove', async member => {
     const joinedTimestamp = member.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
     
     if (kickExecutor) {
-        sendLog(member.guild, 'Üye Sunucudan Atıldı (Kick)', [
+        sendLog(member.guild, `${emojis.banhammer} Üye Sunucudan Atıldı (Kick)`, [
             `**Atılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
             `**Atan Yetkili:** ${kickExecutor} (\`${kickExecutor.tag}\`)`,
             `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
         ]);
     } else {
-        sendLog(member.guild, 'Üye Sunucudan Ayrıldı', [
+        sendLog(member.guild, `${emojis.minus} Üye Sunucudan Ayrıldı`, [
             `**Ayrılan Kullanıcı:** ${member.user} (\`${member.user.tag}\` - \`${member.id}\`)`,
             `**Sunucuya Katıldığı Tarih:** ${joinedTimestamp ? `<t:${joinedTimestamp}:F> (<t:${joinedTimestamp}:R>)` : 'Bilinmiyor'}`,
             `**Kalan Üye Sayısı:** \`${member.guild.memberCount}\``
@@ -493,14 +495,14 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberRoleUpdate, newMember.id);
 
         if (addedRoles.size > 0) {
-            sendLog(newMember.guild, 'Kullanıcıya Rol Verildi', [
+            sendLog(newMember.guild, `${emojis.plus} Kullanıcıya Rol Verildi`, [
                 `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
                 `**Rolü Veren:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
                 `**Verilen Rol(ler):** ${addedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
             ]);
         }
         if (removedRoles.size > 0) {
-            sendLog(newMember.guild, 'Kullanıcıdan Rol Alındı', [
+            sendLog(newMember.guild, `${emojis.minus} Kullanıcıdan Rol Alındı`, [
                 `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
                 `**Rolü Alan:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor / Sistem'}`,
                 `**Alınan Rol(ler):** ${removedRoles.map(r => `${r} (\`${r.name}\`)`).join(', ')}`
@@ -511,7 +513,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     // İsim Değişikliği Takibi
     if (oldMember.nickname !== newMember.nickname) {
         const executor = await getAuditExecutor(newMember.guild, AuditLogEvent.MemberUpdate, newMember.id);
-        sendLog(newMember.guild, 'İsim (Nickname) Güncellendi', [
+        sendLog(newMember.guild, `${emojis.settings} İsim (Nickname) Güncellendi`, [
             `**Kullanıcı:** ${newMember.user} (\`${newMember.user.tag}\` - \`${newMember.id}\`)`,
             `**Değiştiren:** ${executor ? `${executor} (\`${executor.tag}\`)` : `${newMember.user} (Kendisi)`}`,
             `**Eski İsim:** \`${oldMember.nickname || oldMember.user.username}\``,
@@ -523,7 +525,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 client.on('guildBanAdd', async ban => {
     if (!ban.guild) return;
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
-    sendLog(ban.guild, 'Kullanıcı Sunucudan Yasaklandı (Ban)', [
+    sendLog(ban.guild, `${emojis.banhammer} Kullanıcı Sunucudan Yasaklandı (Ban)`, [
         `**Yasaklanan Kullanıcı:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
         `**Yasaklayan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Ban Sebebi:** \`${ban.reason || 'Sebep belirtilmedi.'}\``
@@ -533,7 +535,7 @@ client.on('guildBanAdd', async ban => {
 client.on('guildBanRemove', async ban => {
     if (!ban.guild) return;
     const executor = await getAuditExecutor(ban.guild, AuditLogEvent.MemberBanRemove, ban.user.id);
-    sendLog(ban.guild, 'Kullanıcının Yasağı Kaldırıldı (Unban)', [
+    sendLog(ban.guild, `${emojis.tick} Kullanıcının Yasağı Kaldırıldı (Unban)`, [
         `**Yasağı Açılan:** ${ban.user} (\`${ban.user.tag}\` - \`${ban.user.id}\`)`,
         `**Yasağı Kaldıran Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
     ]);
@@ -542,7 +544,7 @@ client.on('guildBanRemove', async ban => {
 client.on('channelCreate', async channel => {
     if (!channel.guild) return;
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
-    sendLog(channel.guild, 'Yeni Kanal Oluşturuldu', [
+    sendLog(channel.guild, `${emojis.plus} Yeni Kanal Oluşturuldu`, [
         `**Kanal:** ${channel} (\`${channel.name}\` - \`${channel.id}\`)`,
         `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Kategori:** \`${channel.parent ? channel.parent.name : 'Kategori Yok'}\``,
@@ -553,7 +555,7 @@ client.on('channelCreate', async channel => {
 client.on('channelDelete', async channel => {
     if (!channel.guild) return;
     const executor = await getAuditExecutor(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
-    sendLog(channel.guild, 'Kanal Silindi', [
+    sendLog(channel.guild, `${emojis.minus} Kanal Silindi`, [
         `**Silinen Kanal:** \`${channel.name}\` (\`${channel.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Bulunduğu Kategori:** \`${channel.parent ? channel.parent.name : 'Yok'}\``
@@ -564,7 +566,7 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
     if (!newChannel.guild) return;
     if (oldChannel.name !== newChannel.name) {
         const executor = await getAuditExecutor(newChannel.guild, AuditLogEvent.ChannelUpdate, newChannel.id);
-        sendLog(newChannel.guild, 'Kanal Adı Güncellendi', [
+        sendLog(newChannel.guild, `${emojis.settings} Kanal Adı Güncellendi`, [
             `**Kanal:** ${newChannel} (\`${newChannel.id}\`)`,
             `**Güncelleyen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
             `**Eski Kanal Adı:** \`${oldChannel.name}\``,
@@ -576,7 +578,7 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
 client.on('roleCreate', async role => {
     if (!role.guild) return;
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleCreate, role.id);
-    sendLog(role.guild, 'Yeni Rol Oluşturuldu', [
+    sendLog(role.guild, `${emojis.plus} Yeni Rol Oluşturuldu`, [
         `**Rol:** ${role} (\`${role.name}\` - \`${role.id}\`)`,
         `**Oluşturan Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`,
         `**Renk Kodu:** \`${role.hexColor}\``
@@ -586,7 +588,7 @@ client.on('roleCreate', async role => {
 client.on('roleDelete', async role => {
     if (!role.guild) return;
     const executor = await getAuditExecutor(role.guild, AuditLogEvent.RoleDelete, role.id);
-    sendLog(role.guild, 'Rol Silindi', [
+    sendLog(role.guild, `${emojis.minus} Rol Silindi`, [
         `**Silinen Rol:** \`${role.name}\` (\`${role.id}\`)`,
         `**Silen Yetkili:** ${executor ? `${executor} (\`${executor.tag}\`)` : 'Bilinmiyor'}`
     ]);
@@ -1096,10 +1098,10 @@ client.on('interactionCreate', async (interaction) => {
                 new TextDisplayBuilder().setContent(`# 🎉 ${g.prize}`),
                 new TextDisplayBuilder().setContent(
                     `${g.description}\n\n` +
-                    `• **Kazanan Sayısı:** ${g.winnerCount} Kişi\n` +
-                    `• **Bitiş Zamanı:** <t:${Math.floor(g.endTime / 1000)}:R> (<t:${Math.floor(g.endTime / 1000)}:F>)\n` +
-                    `• **Başlatan:** <@${g.authorId}>\n` +
-                    `• **Katılımcı Sayısı:** ${g.participants.length}`
+                    `${emojis.matter} **Kazanan Sayısı:** ${g.winnerCount} Kişi\n` +
+                    `${emojis.matter} **Bitiş Zamanı:** <t:${Math.floor(g.endTime / 1000)}:R> (<t:${Math.floor(g.endTime / 1000)}:F>)\n` +
+                    `${emojis.matter} **Başlatan:** <@${g.authorId}>\n` +
+                    `${emojis.matter} **Katılımcı Sayısı:** ${g.participants.length}`
                 )
             )
             .addSeparatorComponents(new SeparatorBuilder());
@@ -1111,9 +1113,9 @@ client.on('interactionCreate', async (interaction) => {
         });
 
         if (exists) {
-            await interaction.followUp({ content: 'Çekilişten ayrıldınız.', flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: `${emojis.cross} Çekilişten ayrıldınız.`, flags: MessageFlags.Ephemeral });
         } else {
-            await interaction.followUp({ content: 'Çekilişe başarıyla katıldınız! Bol şans dileriz. 🎉', flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: `${emojis.tick} Çekilişe başarıyla katıldınız! Bol şans dileriz. 🎉`, flags: MessageFlags.Ephemeral });
         }
         return;
     }
@@ -1226,11 +1228,11 @@ client.on('interactionCreate', async (interaction) => {
             const ticketContainer = new ContainerBuilder();
             const ticketSection = new SectionBuilder();
             ticketSection.addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`# ${ticketCfg.ticketTitle || 'Destek Talebi'} — #${safeUsername}`),
+                new TextDisplayBuilder().setContent(`# ${emojis.plus} ${ticketCfg.ticketTitle || 'Destek Talebi'} — #${safeUsername}`),
                 new TextDisplayBuilder().setContent(
                     `${ticketCfg.ticketWelcome || 'Hoş geldiniz! Lütfen sorununuzu veya talebinizi detaylı bir şekilde açıklayın. Yetkili ekibimiz en kısa sürede sizinle ilgilenecektir.'}\n\n` +
-                    `> **Kullanıcı:** ${interaction.user}\n` +
-                    `> **Yetkili Ekip:** <@&${ticketCfg.roleId}>`
+                    `${emojis.matter} **Kullanıcı:** ${interaction.user}\n` +
+                    `${emojis.matter} **Yetkili Ekip:** <@&${ticketCfg.roleId}>`
                 )
             );
 
@@ -1363,11 +1365,11 @@ client.on('interactionCreate', async (interaction) => {
                     const transFile = new AttachmentBuilder(Buffer.from(transcriptText, 'utf-8'), { name: `transcript-${interaction.channel.name}.txt` });
                     const logContainer = new ContainerBuilder()
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent('# Destek Talebi Kapatıldı'),
+                            new TextDisplayBuilder().setContent(`# ${emojis.minus} Destek Talebi Kapatıldı`),
                             new TextDisplayBuilder().setContent(
-                                `• **Kanal:** \`${interaction.channel.name}\`\n` +
-                                `• **Kapatan:** ${interaction.user} (\`${interaction.user.tag || interaction.user.username}\`)\n` +
-                                `• **Kapanma Zamanı:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                                `${emojis.matter} **Kanal:** \`${interaction.channel.name}\`\n` +
+                                `${emojis.matter} **Kapatan:** ${interaction.user} (\`${interaction.user.tag || interaction.user.username}\`)\n` +
+                                `${emojis.matter} **Kapanma Zamanı:** <t:${Math.floor(Date.now() / 1000)}:F>`
                             )
                         );
 

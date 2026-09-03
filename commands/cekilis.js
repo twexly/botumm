@@ -8,6 +8,8 @@ const {
     MessageFlags 
 } = require('discord.js');
 
+const emojis = require('../emojis');
+
 function parseArgs(str) {
     const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
     const matches = [];
@@ -50,9 +52,9 @@ module.exports = {
                         'Lütfen çekiliş komutunu aşağıdaki formatta kullanın:\n\n' +
                         '👉 **`.cekilis <Ödül> <KişiSayısı> <Süre> <Açıklama>`**\n\n' +
                         '**Örnekler:**\n' +
-                        '• `.cekilis Nitro 1 30m Sunucumuza özel Discord Nitro çekilişi!`\n' +
-                        '• `.cekilis "1 Aylık Spotify" 3 2h Müzik severlere özel hediye!`\n' +
-                        '• `.cekilis VIP_Rol 2 1d Sunucu aktiflik ödülü!`\n\n' +
+                        `${emojis.matter} \`.cekilis Nitro 1 30m Sunucumuza özel Discord Nitro çekilişi!\`\n` +
+                        `${emojis.matter} \`.cekilis "1 Aylık Spotify" 3 2h Müzik severlere özel hediye!\`\n` +
+                        `${emojis.matter} \`.cekilis VIP_Rol 2 1d Sunucu aktiflik ödülü!\`\n\n` +
                         '**Süre Formatları:** `s` / `sn` (saniye), `m` / `dk` (dakika), `h` / `sa` (saat), `d` / `g` (gün)'
                     )
                 );
@@ -66,11 +68,11 @@ module.exports = {
         const description = parsed.slice(3).join(' ') || 'Katılmak için aşağıdaki butona basabilirsiniz!';
 
         if (!winnerCount || isNaN(winnerCount) || winnerCount < 1) {
-            return message.reply("Lütfen geçerli bir kazanan kişi sayısı belirtin. (Örn: `1`, `2`, `5`)");
+            return message.reply(`${emojis.cross} Lütfen geçerli bir kazanan kişi sayısı belirtin. (Örn: \`1\`, \`2\`, \`5\`)`);
         }
 
         if (!durationMs || durationMs < 10000) {
-            return message.reply("Lütfen geçerli bir süre belirtin (en az 10 saniye). Örnek: `30s`, `10m`, `2h`, `1d`");
+            return message.reply(`${emojis.cross} Lütfen geçerli bir süre belirtin (en az 10 saniye). Örnek: \`30s\`, \`10m\`, \`2h\`, \`1d\``);
         }
 
         const endTime = Date.now() + durationMs;
@@ -83,10 +85,10 @@ module.exports = {
                 new TextDisplayBuilder().setContent(`# 🎉 ${prize}`),
                 new TextDisplayBuilder().setContent(
                     `${description}\n\n` +
-                    `• **Kazanan Sayısı:** ${winnerCount} Kişi\n` +
-                    `• **Bitiş Zamanı:** <t:${endTimestamp}:R> (<t:${endTimestamp}:F>)\n` +
-                    `• **Başlatan:** ${message.author}\n` +
-                    `• **Katılımcı Sayısı:** 0`
+                    `${emojis.matter} **Kazanan Sayısı:** ${winnerCount} Kişi\n` +
+                    `${emojis.matter} **Bitiş Zamanı:** <t:${endTimestamp}:R> (<t:${endTimestamp}:F>)\n` +
+                    `${emojis.matter} **Başlatan:** ${message.author}\n` +
+                    `${emojis.matter} **Katılımcı Sayısı:** 0`
                 )
             )
             .addSeparatorComponents(new SeparatorBuilder());

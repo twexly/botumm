@@ -8,6 +8,7 @@ const {
     ChannelType 
 } = require('discord.js');
 const { createCanvas, loadImage } = require('canvas');
+const emojis = require('../emojis');
 
 function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
@@ -266,12 +267,12 @@ module.exports = {
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent(`# 📊 ${guild.name} — Sunucu İstatistikleri`),
                     new TextDisplayBuilder().setContent(
-                        `• **Toplam Üye:** **${totalMembers.toLocaleString('tr-TR')}** *(👤 ${humans.toLocaleString('tr-TR')} Üye, 🤖 ${bots} Bot, 🔊 ${voiceCount} Seste)*\n` +
-                        `• **Toplam Kanal:** **${totalChannels}** *(💬 ${textChannels} Metin, 🔊 ${voiceChannels} Ses, 📁 ${categories} Kategori)*\n` +
-                        `• **Toplam Rol:** **${totalRoles}** Adet\n` +
-                        `• **Sunucu Takviyesi:** **${boostCount}** Boost *(Seviye ${boostLevel})*\n` +
-                        `• **Sunucu Sahibi:** <@${guild.ownerId}>\n` +
-                        `• **Kuruluş Tarihi:** <t:${Math.floor(guild.createdTimestamp / 1000)}:D> (<t:${Math.floor(guild.createdTimestamp / 1000)}:R>)`
+                        `${emojis.matter} **Toplam Üye:** **${totalMembers.toLocaleString('tr-TR')}** *(👤 ${humans.toLocaleString('tr-TR')} Üye, 🤖 ${bots} Bot, 🔊 ${voiceCount} Seste)*\n` +
+                        `${emojis.matter} **Toplam Kanal:** **${totalChannels}** *(💬 ${textChannels} Metin, 🔊 ${voiceChannels} Ses, 📁 ${categories} Kategori)*\n` +
+                        `${emojis.matter} **Toplam Rol:** **${totalRoles}** Adet\n` +
+                        `${emojis.matter} **Sunucu Takviyesi:** **${boostCount}** Boost *(Seviye ${boostLevel})*\n` +
+                        `${emojis.matter} **Sunucu Sahibi:** <@${guild.ownerId}>\n` +
+                        `${emojis.matter} **Kuruluş Tarihi:** <t:${Math.floor(guild.createdTimestamp / 1000)}:D> (<t:${Math.floor(guild.createdTimestamp / 1000)}:R>)`
                     )
                 );
 
