@@ -16,8 +16,8 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
 }
 
 function generateHelpBanner() {
-    const width = 1000;
-    const height = 520;
+    const width = 1040;
+    const height = 580;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
@@ -27,19 +27,19 @@ function generateHelpBanner() {
 
     // 2. Arka Plan Gradyanı
     const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-    bgGrad.addColorStop(0, '#0a0a0f');
-    bgGrad.addColorStop(0.5, '#12131c');
-    bgGrad.addColorStop(1, '#07070b');
+    bgGrad.addColorStop(0, '#08090f');
+    bgGrad.addColorStop(0.5, '#0f111a');
+    bgGrad.addColorStop(1, '#05060a');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
     // Arka Plan Işık Efektleri (Bokeh)
     ctx.fillStyle = 'rgba(99, 102, 241, 0.12)';
-    ctx.beginPath(); ctx.arc(180, 100, 140, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(180, 100, 150, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(236, 72, 153, 0.08)';
-    ctx.beginPath(); ctx.arc(820, 140, 160, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(840, 140, 160, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-    ctx.beginPath(); ctx.arc(500, 420, 180, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(520, 460, 180, 0, Math.PI * 2); ctx.fill();
 
     // Dış İnce Çerçeve
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -49,15 +49,15 @@ function generateHelpBanner() {
 
     // 3. Başlık Alanı
     ctx.textAlign = 'left';
-    ctx.font = 'bold 36px sans-serif';
+    ctx.font = 'bold 34px sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('KOMUT REHBERİ', 50, 65);
+    ctx.fillText('KOMUT REHBERİ VE KULLANIM KILAVUZU', 50, 62);
 
     // Prefix Rozeti (Pill Badge)
     const prefixText = 'Prefix: . ve !';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 15px sans-serif';
     const pWidth = ctx.measureText(prefixText).width + 30;
-    drawRoundRect(ctx, 50, 85, pWidth, 32, 16);
+    drawRoundRect(ctx, 50, 80, pWidth, 30, 15);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -66,12 +66,12 @@ function generateHelpBanner() {
 
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'center';
-    ctx.fillText(prefixText, 50 + pWidth / 2, 106);
+    ctx.fillText(prefixText, 50 + pWidth / 2, 100);
 
-    // 4. İki Ana Kolon (Sol: Genel & Eğlence, Sağ: Moderasyon & Sistem)
-    const colWidth = 430;
-    const colHeight = 350;
-    const colY = 135;
+    // 4. İki Ana Kolon (Sol: Genel & Eğlence, Sağ: Yönetim & Sistemler)
+    const colWidth = 450;
+    const colHeight = 420;
+    const colY = 125;
 
     // --- SOL KOLON (Genel & Eğlence) ---
     const leftX = 50;
@@ -83,44 +83,41 @@ function generateHelpBanner() {
     ctx.stroke();
 
     // Sol Kolon Başlığı
-    drawRoundRect(ctx, leftX + 20, colY + 18, 180, 32, 16);
+    drawRoundRect(ctx, leftX + 20, colY + 16, 190, 32, 16);
     ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
     ctx.fill();
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('GENEL & EĞLENCE', leftX + 110, colY + 39);
+    ctx.fillText('GENEL & EĞLENCE', leftX + 115, colY + 36);
 
-    // Sol Kolon Komut Listesi
     const generalCmds = [
         { name: '.rank', desc: 'Seviye, XP ve sıralama kartını gösterir' },
-        { name: '.toplevel', desc: 'En aktif üyelerin liderlik tablosu' },
+        { name: '.toplevel', desc: 'En aktif üyelerin liderlik sıralaması' },
         { name: '.ship', desc: 'İki üye arasındaki aşk ve uyum yüzdesi' },
-        { name: '.ai <soru>', desc: 'Yapay zeka ile anlık sohbet ve yanıt' },
-        { name: '.yardım', desc: 'Tüm komutları ve kullanım rehberini açar' }
+        { name: '.ai <soru>', desc: 'Yapay zeka ile anlık soru-cevap sohbeti' },
+        { name: '.kurulum', desc: 'Rehber ve başlangıç kanalını oluşturur' },
+        { name: '.yardım', desc: 'Tüm komutları ve rehber menüsünü açar' }
     ];
 
     ctx.textAlign = 'left';
     generalCmds.forEach((cmd, i) => {
-        const itemY = colY + 80 + i * 54;
-        
-        // Komut hap kutusu
+        const itemY = colY + 74 + i * 54;
         drawRoundRect(ctx, leftX + 20, itemY - 18, 100, 28, 8);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
         ctx.fill();
 
-        ctx.font = 'bold 14px monospace';
+        ctx.font = 'bold 13px monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(cmd.name, leftX + 30, itemY + 1);
+        ctx.fillText(cmd.name, leftX + 28, itemY + 1);
 
-        // Açıklama
-        ctx.font = '13px sans-serif';
+        ctx.font = '12px sans-serif';
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(cmd.desc, leftX + 130, itemY);
     });
 
-    // --- SAĞ KOLON (Yönetim & Moderasyon) ---
-    const rightX = 520;
+    // --- SAĞ KOLON (Yönetim & Sistemler) ---
+    const rightX = 540;
     drawRoundRect(ctx, rightX, colY, colWidth, colHeight, 20);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.fill();
@@ -129,30 +126,28 @@ function generateHelpBanner() {
     ctx.stroke();
 
     // Sağ Kolon Başlığı
-    drawRoundRect(ctx, rightX + 20, colY + 18, 200, 32, 16);
+    drawRoundRect(ctx, rightX + 20, colY + 16, 210, 32, 16);
     ctx.fillStyle = 'rgba(236, 72, 153, 0.2)';
     ctx.fill();
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('YÖNETİM & MODERASYON', rightX + 120, colY + 39);
+    ctx.fillText('YÖNETİM & SİSTEMLER', rightX + 125, colY + 36);
 
-    // Sağ Kolon Komut Listesi
     const modCmds = [
-        { name: '.adminrole', desc: 'Botun moderatör yetkili rolünü ayarlar' },
+        { name: '.adminrole', desc: 'Yetkili rolünü ayarlar (İlk Zorunlu Adım)' },
+        { name: '.cekilis', desc: 'Butonlu şık çekiliş başlatır (.cekilis)' },
+        { name: '.ticket', desc: 'İnteraktif destek bilet paneli kurar' },
+        { name: '.welcome', desc: '3 temalı resimli hoş geldin kanalını ayarlar' },
         { name: '.ozeloda', desc: 'Özel ses kanalı oluşturma panelini kurar' },
-        { name: '.log', desc: 'Sunucu ve mod log kanallarını oluşturur' },
-        { name: '.welcome', desc: 'Resimli karşılama kanalını ayarlar' },
-        { name: '.offadd', desc: 'Anti-link / Reklam korumasını açar/kapatır' },
-        { name: '.rolekle', desc: 'Üyeye güvenli şekilde rol verir' }
+        { name: '.log', desc: 'Sunucu ve mod denetim loglarını oluşturur' },
+        { name: '.offadd', desc: 'Anti-link / Reklam korumasını açar/kapatır' }
     ];
 
     ctx.textAlign = 'left';
     modCmds.forEach((cmd, i) => {
-        const itemY = colY + 74 + i * 44;
-        
-        // Komut hap kutusu
-        drawRoundRect(ctx, rightX + 20, itemY - 16, 105, 26, 8);
+        const itemY = colY + 68 + i * 48;
+        drawRoundRect(ctx, rightX + 20, itemY - 16, 110, 26, 8);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
         ctx.fill();
 
@@ -160,10 +155,9 @@ function generateHelpBanner() {
         ctx.fillStyle = '#ffffff';
         ctx.fillText(cmd.name, rightX + 28, itemY + 2);
 
-        // Açıklama
         ctx.font = '12px sans-serif';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText(cmd.desc, rightX + 135, itemY + 1);
+        ctx.fillText(cmd.desc, rightX + 140, itemY + 1);
     });
 
     return canvas.toBuffer('image/png');
@@ -180,39 +174,46 @@ module.exports = {
 
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('# Komut Rehberi ve Kullanım Kılavuzu'),
+                    new TextDisplayBuilder().setContent('# 📖 Komut Rehberi ve Kullanım Kılavuzu'),
                     new TextDisplayBuilder().setContent('*Botun tüm komutlarını hem `.` hem de `!` prefixi ile kullanabilirsiniz.*')
-                )
-                .addSeparatorComponents(new SeparatorBuilder())
-                .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(
-                        '### Genel & Eğlence Komutları\n' +
-                        '• **`.rank`** `[!rank]` : Seviye, kazanılan XP ve sunucu sıralama kartını gösterir.\n' +
-                        '• **`.toplevel`** `[!toplevel]` : Sunucunun en aktif (mesaj, ses, seviye) üyelerini listeler.\n' +
-                        '• **`.ship`** `[!ship @üye]` : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n' +
-                        '• **`.ai <soru>`** `[!ai]` : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.'
-                    ),
-                    new TextDisplayBuilder().setContent(
-                        '### Yönetim & Moderasyon Komutları\n' +
-                        '• **`.adminrole <@rol/ID>`** : Botun yetkili/moderatör rolünü belirler (İlk adım).\n' +
-                        '• **`.cekilis <ödül> <kişi> <süre> <açıklama>`** : Şık ve butonlu çekiliş başlatır.\n' +
-                        '• **`.reroll [mesajID]`** : Sona eren çekiliş için yeniden kazanan belirler.\n' +
-                        '• **`.ticket`** `[!ticket]` : Adım adım interaktif destek paneli kurulum sihirbazını başlatır.\n' +
-                        '• **`.ozeloda`** : Gelişmiş butonlu özel ses odası yönetim panelini kurar.\n' +
-                        '• **`.log`** : Sunucu ve moderasyon log kayıt kanallarını otomatik oluşturur.\n' +
-                        '• **`.welcome <#kanal>`** : Yeni üyelere özel resimli hoş geldin karşılama kanalını ayarlar.\n' +
-                        '• **`.level`** : Seviye atlama bildirimlerinin gönderileceği kanalı kilitler ve ayarlar.\n' +
-                        '• **`.offadd`** : Otomatik reklam ve link engelleme korumasını açar / kapatır.\n' +
-                        '• **`.rolekle <@üye> <@rol>`** : Belirtilen kullanıcıya güvenli şekilde rol verir.\n' +
-                        '• **`.ban <@üye>`** / **`.kick <@üye>`** : Kullanıcıyı sunucudan yasaklar veya atar.\n' +
-                        '• **`.lock`** / **`.unlock`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar.\n' +
-                        '• **`.slowmode <saniye>`** : Kanal için yavaş mod süresini ayarlar.\n' +
-                        '• **`.nuke`** : Kanalı klonlayıp tüm mesajları temizler.'
-                    )
                 );
 
             const media = new MediaGalleryBuilder().addItems([{ media: { url: 'attachment://help_banner.png' } }]);
             container.addMediaGalleryComponents(media);
+
+            container.addSeparatorComponents(new SeparatorBuilder());
+
+            container.addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(
+                    '### 🛠️ Yönetim & Kurulum Sistemleri\n' +
+                    '• **`.adminrole <@rol/ID>`** : Botun yetkili rolünü tanımlar (**İlk Zorunlu Adım**).\n' +
+                    '• **`.kurulum`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur.\n' +
+                    '• **`.cekilis <ödül> <kişi> <süre> <açıklama>`** : Butonlu şık çekiliş başlatır.\n' +
+                    '• **`.reroll [mesajID]`** : Sona eren çekiliş için yeniden kazanan belirler.\n' +
+                    '• **`.ticket`** : Görsel kılavuzlu adım adım bilet paneli kurar.\n' +
+                    '• **`.welcome <#kanal>`** : 3 temalı hoş geldin resimli karşılama kanalını ayarlar.\n' +
+                    '• **`.ozeloda`** : Butonlu özel ses odası yönetim panelini kurar.\n' +
+                    '• **`.log`** : Moderasyon ve sunucu denetim log kanallarını otomatik açar.\n' +
+                    '• **`.level <#kanal>`** : Seviye atlama kutlama kanalını ayarlar.\n' +
+                    '• **`.offadd`** : Otomatik reklam ve link engelleme korumasını açar/kapatır.'
+                ),
+                new TextDisplayBuilder().setContent(
+                    '### 🛡️ Moderasyon & Güvenlik Komutları\n' +
+                    '• **`.rolekle <@üye> <@rol>`** : Üyeye güvenli şekilde rol verir.\n' +
+                    '• **`.ban <@üye>`** / **`.kick <@üye>`** : Kullanıcıyı sunucudan yasaklar veya atar.\n' +
+                    '• **`.lock`** / **`.unlock`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar.\n' +
+                    '• **`.slowmode <saniye>`** : Kanal için yavaş mod süresini ayarlar.\n' +
+                    '• **`.nuke`** : Kanalı klonlayıp tüm eski mesajları temizler.'
+                ),
+                new TextDisplayBuilder().setContent(
+                    '### 🎮 Genel & Eğlence Komutları\n' +
+                    '• **`.rank`** : Seviye, XP ve sunucu sıralama kartınızı gösterir.\n' +
+                    '• **`.toplevel`** : Sunucunun en aktif üyelerini (mesaj, ses, seviye) listeler.\n' +
+                    '• **`.ship <@üye>`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n' +
+                    '• **`.ai <soru>`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n' +
+                    '• **`.yardım`** : Tüm komut rehberini ve bu menüyü açar.'
+                )
+            );
 
             await message.reply({
                 components: [container],
