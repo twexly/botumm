@@ -213,13 +213,13 @@ module.exports = {
         // Section (Başlık, Açıklama ve Sunucu İkonu Thumbnail)
         const section = new SectionBuilder();
         section.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`# 🛡️ ${message.guild.name} — Sunucu Doğrulama`),
+            new TextDisplayBuilder().setContent('# Sunucu Doğrulama'),
             new TextDisplayBuilder().setContent(
                 `Sunucumuza hoş geldiniz! Topluluğumuzun güvenliğini sağlamak ve tüm kanallara tam erişim elde etmek için lütfen üyeliğinizi onaylayın.\n\n` +
                 `${emojis.matter} **Tanımlanacak Rol:** ${role}\n` +
-                `${emojis.matter} **İşlem:** Aşağıdaki yeşil **Doğrula & Sunucuya Katıl** butonuna tıklamanız yeterlidir.\n` +
-                `${emojis.matter} **Güvenlik:** Herhangi bir harici bağlantı veya izin gerektirmez, 7/24 anında çalışır.\n\n` +
-                `> *Aramıza katılmak için butona basarak doğrulamanızı tamamlayın!*`
+                `${emojis.matter} **İşlem:** Aşağıdaki **Doğrula & Sunucuya Katıl** butonuna tıklamanız yeterlidir.\n` +
+                `${emojis.matter} **Kurallar:** Butona tıkladığınızda sunucu kurallarımızı okumuş ve kabul etmiş sayılırsınız.\n\n` +
+                `> *Aramıza katılmak ve kuralları onaylamak için butona tıklayın!*`
             )
         );
 
@@ -239,12 +239,12 @@ module.exports = {
 
         container.addSeparatorComponents(new SeparatorBuilder());
 
-        // Doğrula Butonu
+        // Doğrula Butonu (Özel Animasyonlu/Parlak Tik Emojisi ile)
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('verify_member_btn')
                 .setLabel('Doğrula & Sunucuya Katıl')
-                .setEmoji('✅')
+                .setEmoji('1545103227865927690')
                 .setStyle(ButtonStyle.Success)
         );
         container.addActionRowComponents(row);

@@ -22,6 +22,7 @@ const {
     TextInputBuilder,
     TextInputStyle,
     UserSelectMenuBuilder,
+    RoleSelectMenuBuilder,
     ActivityType
 } = require('discord.js');
 const fs = require('fs');
@@ -862,6 +863,18 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
 client.on('guildMemberAdd', async (member) => {
     if (!member.guild) return;
     const guildConfig = client.getGuildConfig(member.guild.id);
+
+    // Otomatik Karşılama Rolü (Eğer ayarlandıysa)
+    if (guildConfig.welcomeRole) {
+        const role = member.guild.roles.cache.get(guildConfig.welcomeRole) || 
+            await member.guild.roles.fetch(guildConfig.welcomeRole).catch(() => null);
+        if (role) {
+            await member.roles.add(role).catch(err => {
+                console.error("Otomatik karşılama rolü verilemedi:", err.message);
+            });
+        }
+    }
+
     if (!guildConfig.welcomeChannel) return;
     const channel = member.guild.channels.cache.get(guildConfig.welcomeChannel);
     if (!channel) return;
@@ -1076,6 +1089,106 @@ client.on('interactionCreate', async (interaction) => {
             `• **[2](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_2.png)** — Siber Gece Mavisi (Neon Mavi Teması)\n` +
             `• **[3](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_3.png)** — Kızıl Akşam & Altın (Amber Teması)\n\n` +
             `Karşılama arka planı başarıyla **Tema ${themeNum} — ${themeNames[themeNum]}** olarak ayarlandı.`;
+
+        await interaction.update({ content, components: [row] });
+        return;
+    }
+
+    // 0.1 KARŞILAMA ROL SORUSU ETKİLEŞİMLERİ (Evet / Hayır)
+    if (interaction.isButton() && (interaction.customId === 'welcome_ask_yes' || interaction.customId === 'welcome_ask_no')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+        const channelMention = guildConfig.welcomeChannel ? `<#${guildConfig.welcomeChannel}>` : 'Belirtilmedi';
+
+        if (interaction.customId === 'welcome_ask_no') {
+            const currentTheme = guildConfig.welcomeTheme || 1;
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('welcome_theme_1')
+                    .setLabel('Tema 1')
+                    .setStyle(currentTheme === 1 ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId('welcome_theme_2')
+                    .setLabel('Tema 2')
+                    .setStyle(currentTheme === 2 ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId('welcome_theme_3')
+                    .setLabel('Tema 3')
+                    .setStyle(currentTheme === 3 ? ButtonStyle.Success : ButtonStyle.Secondary)
+            );
+
+            const content = `## Karşılama Sistemi Aktif Edildi\n` +
+                `• **Karşılama Kanalı:** ${channelMention}\n` +
+                `• **Otomatik Katılım Rolü:** *Ayarlanmadı (İptal Edildi)*\n\n` +
+                `Aşağıdaki butonlardan karşılama görselinin temasını seçebilirsiniz:\n\n` +
+                `• **[1](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_1.png)** — Gece Sakurası (Mor & Lila Teması)\n` +
+                `• **[2](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_2.png)** — Siber Gece Mavisi (Neon Mavi Teması)\n` +
+                `• **[3](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_3.png)** — Kızıl Akşam & Altın (Amber Teması)\n\n` +
+                `*Şu an seçili tema:* **Tema ${currentTheme}**`;
+
+            await interaction.update({ content, components: [row] });
+            return;
+        }
+
+        if (interaction.customId === 'welcome_ask_yes') {
+            const roleSelect = new RoleSelectMenuBuilder()
+                .setCustomId('welcome_select_role')
+                .setPlaceholder('🎯 Yeni katılanlara verilecek üye rolünü seçin...')
+                .setMinValues(1)
+                .setMaxValues(1);
+
+            const row = new ActionRowBuilder().addComponents(roleSelect);
+
+            const content = `## 🎯 Otomatik Katılım Rolü Seçimi\n` +
+                `Sunucuya yeni katılan üyelere otomatik olarak tanımlanacak rolü aşağıdaki menüden seçin:`;
+
+            await interaction.update({ content, components: [row] });
+            return;
+        }
+    }
+
+    // 0.2 KARŞILAMA ROL SEÇİM MENÜSÜ
+    if (interaction.isRoleSelectMenu() && interaction.customId === 'welcome_select_role') {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const selectedRoleId = interaction.values[0];
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+        guildConfig.welcomeRole = selectedRoleId;
+        client.saveConfig();
+
+        const channelMention = guildConfig.welcomeChannel ? `<#${guildConfig.welcomeChannel}>` : 'Belirtilmedi';
+        const currentTheme = guildConfig.welcomeTheme || 1;
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_1')
+                .setLabel('Tema 1')
+                .setStyle(currentTheme === 1 ? ButtonStyle.Success : ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_2')
+                .setLabel('Tema 2')
+                .setStyle(currentTheme === 2 ? ButtonStyle.Success : ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_3')
+                .setLabel('Tema 3')
+                .setStyle(currentTheme === 3 ? ButtonStyle.Success : ButtonStyle.Secondary)
+        );
+
+        const content = `## Karşılama Sistemi Aktif Edildi\n` +
+            `• **Karşılama Kanalı:** ${channelMention}\n` +
+            `• **Otomatik Katılım Rolü:** <@&${selectedRoleId}>\n\n` +
+            `Aşağıdaki butonlardan karşılama görselinin temasını seçebilirsiniz:\n\n` +
+            `• **[1](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_1.png)** — Gece Sakurası (Mor & Lila Teması)\n` +
+            `• **[2](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_2.png)** — Siber Gece Mavisi (Neon Mavi Teması)\n` +
+            `• **[3](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_3.png)** — Kızıl Akşam & Altın (Amber Teması)\n\n` +
+            `*Şu an seçili tema:* **Tema ${currentTheme}**`;
 
         await interaction.update({ content, components: [row] });
         return;
