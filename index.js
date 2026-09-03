@@ -300,6 +300,16 @@ client.once('ready', () => {
             }
         }
     }
+
+    // Sunucularda #bot-kurulum kanalını kontrol et ve otomatik oluştur
+    try {
+        const { ensureSetupChannel } = require('./commands/kurulum');
+        client.guilds.cache.forEach(guild => {
+            ensureSetupChannel(guild).catch(e => console.error(`[Kurulum] ${guild.name} hata:`, e));
+        });
+    } catch(e) {
+        console.error("ensureSetupChannel yükleme hatası:", e);
+    }
 });
 
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG
@@ -1608,39 +1618,8 @@ client.on('interactionCreate', async (interaction) => {
 // Sunucuya Katılma Olayı (guildCreate): Otomatik bot-kurulum kanalı açıp rehberi gönderir
 client.on('guildCreate', async (guild) => {
     try {
-        let setupChannel = guild.channels.cache.find(c => c.name === 'bot-kurulum' && c.type === ChannelType.GuildText);
-        if (!setupChannel) {
-            setupChannel = await guild.channels.create({
-                name: 'bot-kurulum',
-                type: ChannelType.GuildText,
-                topic: 'Bot ilk kurulum ve yönetim başlangıç kılavuzu kanalı.',
-                permissionOverwrites: [
-                    {
-                        id: guild.roles.everyone.id,
-                        deny: [PermissionFlagsBits.ViewChannel]
-                    },
-                    {
-                        id: guild.ownerId,
-                        allow: [
-                            PermissionFlagsBits.ViewChannel,
-                            PermissionFlagsBits.SendMessages,
-                            PermissionFlagsBits.ReadMessageHistory
-                        ]
-                    },
-                    {
-                        id: client.user.id,
-                        allow: [
-                            PermissionFlagsBits.ViewChannel,
-                            PermissionFlagsBits.SendMessages,
-                            PermissionFlagsBits.AttachFiles,
-                            PermissionFlagsBits.EmbedLinks
-                        ]
-                    }
-                ]
-            });
-        }
-        const { sendSetupGuide } = require('./commands/kurulum');
-        await sendSetupGuide(guild, setupChannel);
+        const { ensureSetupChannel } = require('./commands/kurulum');
+        await ensureSetupChannel(guild);
         console.log(`Yeni sunucuya katıldı ve kurulum rehberi gönderildi: ${guild.name} (${guild.id})`);
     } catch(err) {
         console.error("guildCreate kurulum kanalı hatası:", err);

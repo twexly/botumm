@@ -55,56 +55,68 @@ async function sendSetupGuide(guild, targetChannel) {
     });
 }
 
+async function ensureSetupChannel(guild) {
+    if (!guild) return null;
+    try {
+        const channels = await guild.channels.fetch();
+        let setupChannel = channels.find(c => c && c.name === 'bot-kurulum' && c.type === ChannelType.GuildText);
+
+        if (!setupChannel) {
+            setupChannel = await guild.channels.create({
+                name: 'bot-kurulum',
+                type: ChannelType.GuildText,
+                topic: 'Bot Kurulum ve Başlangıç Rehberi | İlk Adım: .adminrole <@rol>',
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+                        deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions]
+                    },
+                    {
+                        id: guild.client.user.id,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.SendMessages,
+                            PermissionFlagsBits.AttachFiles,
+                            PermissionFlagsBits.EmbedLinks
+                        ]
+                    }
+                ]
+            });
+
+            await sendSetupGuide(guild, setupChannel);
+            console.log(`[Kurulum] ${guild.name} sunucusunda #bot-kurulum kanalı başarıyla oluşturuldu ve rehber gönderildi.`);
+        }
+        return setupChannel;
+    } catch (err) {
+        console.error(`[Kurulum Hatası] ${guild.name} sunucusunda #bot-kurulum oluşturulamadı:`, err);
+        return null;
+    }
+}
+
 module.exports = {
     name: 'kurulum',
     aliases: ['rehber', 'baslangic', 'setup'],
     sendSetupGuide,
+    ensureSetupChannel,
     async execute(message, client, args) {
         if (!message.guild) return;
 
-        const isOwner = message.guild.ownerId === message.author.id;
-        const isAdmin = message.member.permissions.has(PermissionFlagsBits.Administrator);
-
-        if (!isOwner && !isAdmin) {
-            return message.reply("Bu komutu sadece sunucu sahibi veya Yönetici yetkisine sahip kullanıcılar kullanabilir.");
+        if (!client.isModerator(message.member)) {
+            return message.reply("Bu komutu sadece sunucu yetkilileri kullanabilir.");
         }
 
         try {
-            let setupChannel = message.guild.channels.cache.find(c => c.name === 'bot-kurulum' && c.type === ChannelType.GuildText);
+            const channels = await message.guild.channels.fetch();
+            let setupChannel = channels.find(c => c && c.name === 'bot-kurulum' && c.type === ChannelType.GuildText);
 
             if (!setupChannel) {
-                setupChannel = await message.guild.channels.create({
-                    name: 'bot-kurulum',
-                    type: ChannelType.GuildText,
-                    topic: 'Bot ilk kurulum ve yönetim başlangıç kılavuzu kanalı.',
-                    permissionOverwrites: [
-                        {
-                            id: message.guild.roles.everyone.id,
-                            deny: [PermissionFlagsBits.ViewChannel]
-                        },
-                        {
-                            id: message.author.id,
-                            allow: [
-                                PermissionFlagsBits.ViewChannel,
-                                PermissionFlagsBits.SendMessages,
-                                PermissionFlagsBits.ReadMessageHistory
-                            ]
-                        },
-                        {
-                            id: client.user.id,
-                            allow: [
-                                PermissionFlagsBits.ViewChannel,
-                                PermissionFlagsBits.SendMessages,
-                                PermissionFlagsBits.AttachFiles,
-                                PermissionFlagsBits.EmbedLinks
-                            ]
-                        }
-                    ]
-                });
+                setupChannel = await ensureSetupChannel(message.guild);
+                await message.reply(`Kurulum kanalı başarıyla oluşturuldu: ${setupChannel}`);
+            } else {
+                await sendSetupGuide(message.guild, setupChannel);
+                await message.reply(`Kurulum rehberi ${setupChannel} kanalına yeniden gönderildi!`);
             }
-
-            await sendSetupGuide(message.guild, setupChannel);
-            await message.reply(`Kurulum rehberi başarıyla ${setupChannel} kanalına gönderildi!`);
 
         } catch (err) {
             console.error("Manuel kurulum komutu hatası:", err);
