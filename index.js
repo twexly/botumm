@@ -262,6 +262,20 @@ client.saveDatabase = () => {
     fs.writeFileSync(dbPath, JSON.stringify(obj, null, 2));
 };
 
+// Ekonomi Yardımcısı
+client.getEconomyStats = (userId) => {
+    if (!client.userStats.has(userId)) {
+        client.userStats.set(userId, { xp: 0, level: 1, messages: 0, voiceTime: 0 });
+    }
+    const stats = client.userStats.get(userId);
+    if (stats.balance === undefined) stats.balance = 250;
+    if (stats.bank === undefined) stats.bank = 0;
+    if (stats.dailyCooldown === undefined) stats.dailyCooldown = 0;
+    if (stats.workCooldown === undefined) stats.workCooldown = 0;
+    if (stats.robCooldown === undefined) stats.robCooldown = 0;
+    return stats;
+};
+
 // Komutları commands klasöründen okuma
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -1667,6 +1681,219 @@ client.on('interactionCreate', async (interaction) => {
                 components: []
             });
         }
+    }
+
+    // --- SÜPER LİG TAKIM SEÇİMİ ---
+    if (interaction.isStringSelectMenu() && interaction.customId === 'superlig_takim_sec') {
+        if (!interaction.guild) return;
+        const selectedValue = interaction.values[0];
+        const superligCmd = client.commands.get('superlig');
+        const teams = superligCmd?.SUPER_LIG_TEAMS || [];
+
+        const selectedTeam = teams.find(t => `sl_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '')}` === selectedValue);
+        if (!selectedTeam) {
+            return interaction.reply({ content: 'Seçilen takım bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        try {
+            await interaction.guild.roles.fetch().catch(() => {});
+            const teamNames = new Set(teams.map(t => t.name.toLowerCase()));
+            const currentRoles = interaction.member.roles.cache.filter(r => teamNames.has(r.name.toLowerCase()));
+
+            for (const r of currentRoles.values()) {
+                await interaction.member.roles.remove(r).catch(() => {});
+            }
+
+            let targetRole = interaction.guild.roles.cache.find(r => r.name.toLowerCase() === selectedTeam.name.toLowerCase());
+            if (!targetRole) {
+                targetRole = await interaction.guild.roles.create({
+                    name: selectedTeam.name,
+                    color: selectedTeam.color,
+                    reason: 'Süper Lig Takım Seçimi'
+                });
+            }
+
+            await interaction.member.roles.add(targetRole);
+
+            const confirmContainer = new ContainerBuilder()
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent('# ⚽ Takımın Başarıyla Ayarlandı!'),
+                    new TextDisplayBuilder().setContent(
+                        `Tebrikler ${interaction.user}!\n\n` +
+                        `• **Seçilen Takım:** ${selectedTeam.emoji} **${selectedTeam.name}**\n` +
+                        `• **Verilen Rol:** ${targetRole}\n` +
+                        `• *${selectedTeam.desc}*\n\n` +
+                        `> *Tribündeki yerin ayrıldı, renklerinle sunucuda parlamaya hazırsın!*`
+                    )
+                );
+
+            return interaction.editReply({
+                components: [confirmContainer],
+                flags: MessageFlags.IsComponentsV2
+            });
+        } catch (err) {
+            console.error('Süper Lig rol verme hatası:', err);
+            return interaction.editReply({
+                content: `Rol verilirken bir hata oluştu: ${err.message}`
+            });
+        }
+    }
+
+    // --- BLACKJACK ETKİLEŞİMLERİ ---
+    if (interaction.isButton() && (interaction.customId.startsWith('bj_hit_') || interaction.customId.startsWith('bj_stand_'))) {
+        const isHit = interaction.customId.startsWith('bj_hit_');
+        const targetUserId = interaction.customId.replace(isHit ? 'bj_hit_' : 'bj_stand_', '');
+
+        if (interaction.user.id !== targetUserId) {
+            return interaction.reply({
+                content: '❌ Bu senin Blackjack masan değil!',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const game = client.activeBlackjack?.get(targetUserId);
+        if (!game) {
+            return interaction.reply({
+                content: '❌ Bu oyunun süresi dolmuş veya oyun bitmiş.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const eco = client.getEconomyStats(targetUserId);
+
+        const calculateHand = (hand) => {
+            let score = 0;
+            let aces = 0;
+            for (const card of hand) {
+                if (card.val === 'A') {
+                    aces++;
+                    score += 11;
+                } else if (['K', 'Q', 'J'].includes(card.val)) {
+                    score += 10;
+                } else {
+                    score += parseInt(card.val, 10);
+                }
+            }
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+            return score;
+        };
+
+        const formatHand = (hand, hideSecond = false) => {
+            if (hideSecond && hand.length > 1) {
+                return `\`${hand[0].suit} ${hand[0].val}\`  \`🂠 ?\``;
+            }
+            return hand.map(c => `\`${c.suit} ${c.val}\``).join('  ');
+        };
+
+        if (isHit) {
+            game.playerHand.push(game.deck.pop());
+            const pScore = calculateHand(game.playerHand);
+
+            if (pScore > 21) {
+                clearTimeout(game.timeout);
+                client.activeBlackjack.delete(targetUserId);
+
+                const bustContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent('# 💥 BUST! (21\'i Geçtin — Kaybettin)'),
+                        new TextDisplayBuilder().setContent(
+                            `Toplam puanın 21'i aştığı için oyunu kaybettin.\n\n` +
+                            `• **Senin Elin (${pScore}):** ${formatHand(game.playerHand)}\n` +
+                            `• **Krupiye Eli:** ${formatHand(game.dealerHand)}\n\n` +
+                            `${emojis.matter} **Kaybedilen Bahis:** \`-${game.bet.toLocaleString('tr-TR')} ₺\`\n` +
+                            `${emojis.matter} **Kalan Nakitin:** \`${eco.balance.toLocaleString('tr-TR')} ₺\``
+                        )
+                    );
+
+                await interaction.update({ components: [bustContainer], flags: MessageFlags.IsComponentsV2 });
+                return;
+            } else {
+                const contContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent('# 🃏 Blackjack Masası (21)'),
+                        new TextDisplayBuilder().setContent(
+                            `Bir kart çektin! 21'e en yakın olan kazanır.\n\n` +
+                            `• **Senin Elin (${pScore}):** ${formatHand(game.playerHand)}\n` +
+                            `• **Krupiye Eli (?):** ${formatHand(game.dealerHand, true)}\n\n` +
+                            `${emojis.matter} **Bahis Tutarı:** \`${game.bet.toLocaleString('tr-TR')} ₺\`\n\n` +
+                            `> *Bir kart daha almak için **Kart Çek**, elini tutmak için **Dur** butonuna bas.*`
+                        )
+                    );
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`bj_hit_${targetUserId}`)
+                        .setLabel('Kart Çek (Hit)')
+                        .setEmoji('🃏')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId(`bj_stand_${targetUserId}`)
+                        .setLabel('Dur (Stand)')
+                        .setEmoji('🛑')
+                        .setStyle(ButtonStyle.Success)
+                );
+                contContainer.addActionRowComponents(row);
+
+                await interaction.update({ components: [contContainer], flags: MessageFlags.IsComponentsV2 });
+                return;
+            }
+        }
+
+        // STAND (Dur)
+        clearTimeout(game.timeout);
+        client.activeBlackjack.delete(targetUserId);
+
+        const finalPScore = calculateHand(game.playerHand);
+        let finalDScore = calculateHand(game.dealerHand);
+
+        while (finalDScore < 17) {
+            game.dealerHand.push(game.deck.pop());
+            finalDScore = calculateHand(game.dealerHand);
+        }
+
+        let resultTitle = '';
+        let netChange = '';
+
+        if (finalDScore > 21) {
+            const won = game.bet * 2;
+            eco.balance += won;
+            resultTitle = '🎉 TEBRİKLER KAZANDIN! (Krupiye Yandı)';
+            netChange = `+${game.bet.toLocaleString('tr-TR')} ₺`;
+        } else if (finalPScore > finalDScore) {
+            const won = game.bet * 2;
+            eco.balance += won;
+            resultTitle = '🎉 TEBRİKLER KAZANDIN!';
+            netChange = `+${game.bet.toLocaleString('tr-TR')} ₺`;
+        } else if (finalPScore === finalDScore) {
+            eco.balance += game.bet;
+            resultTitle = '🤝 BERABERE! (Bahis İade)';
+            netChange = `0 ₺ (İade Edildi)`;
+        } else {
+            resultTitle = '❌ KAYBETTİN... (Krupiye Kazandı)';
+            netChange = `-${game.bet.toLocaleString('tr-TR')} ₺`;
+        }
+
+        client.saveDatabase();
+
+        const endContainer = new ContainerBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`# ${resultTitle}`),
+                new TextDisplayBuilder().setContent(
+                    `Oyun tamamlandı!\n\n` +
+                    `• **Senin Elin (${finalPScore}):** ${formatHand(game.playerHand)}\n` +
+                    `• **Krupiye Eli (${finalDScore}):** ${formatHand(game.dealerHand)}\n\n` +
+                    `${emojis.matter} **Net Değişim:** \`${netChange}\`\n` +
+                    `${emojis.matter} **Güncel Nakitin:** \`${eco.balance.toLocaleString('tr-TR')} ₺\``
+                )
+            );
+
+        await interaction.update({ components: [endContainer], flags: MessageFlags.IsComponentsV2 });
+        return;
     }
 });
 

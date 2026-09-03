@@ -216,6 +216,23 @@ module.exports = {
                     `${emojis.matter} **\`.ship <@üye>\`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n` +
                     `${emojis.matter} **\`.ai <soru>\`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n` +
                     `${emojis.matter} **\`.yardım\`** : Tüm komut rehberini ve bu menüyü açar.`
+                ),
+                new TextDisplayBuilder().setContent(
+                    `### 🎰 Ekonomi & Casino Sistemi\n` +
+                    `${emojis.matter} **\`.bakiye [@üye]\`** : Cüzdan, banka ve toplam servet kartınızı HD görselle gösterir.\n` +
+                    `${emojis.matter} **\`.günlük\`** : 24 saatte bir günlük maaşınızı hesabınıza aktarır.\n` +
+                    `${emojis.matter} **\`.çalış\`** : Çeşitli işlerde çalışarak 30 dakikada bir para kazandırır.\n` +
+                    `${emojis.matter} **\`.soygun <@üye>\`** : Başka bir üyeyi soymayı denersiniz (%45 şans).\n` +
+                    `${emojis.matter} **\`.transfer <@üye> <miktar>\`** : Başka bir üyeye nakit para gönderir.\n` +
+                    `${emojis.matter} **\`.slot <miktar>\`** : 🍒 🍋 💎 7️⃣ slot makinesinde şansınızı denersiniz.\n` +
+                    `${emojis.matter} **\`.blackjack <miktar>\`** : Krupiyeye karşı butonlu 21 kart oyunu oynarsınız.\n` +
+                    `${emojis.matter} **\`.yazıtura <yazı/tura> <miktar>\`** : Parayı ikiye katlamak için yazı tura atarsınız.\n` +
+                    `${emojis.matter} **\`.zenginler\`** : Sunucunun en zengin 10 üyesini listeler.`
+                ),
+                new TextDisplayBuilder().setContent(
+                    `### ⚽ Süper Lig & Futbol\n` +
+                    `${emojis.matter} **\`.superlig\`** : Süper Lig takım rollerini oluşturur ve seçim menüsünü gönderir.\n` +
+                    `${emojis.matter} **\`.puandurumu\`** : FlashScore üzerinden canlı Süper Lig puan durumu tablosunu anlık çeker.`
                 )
             );
 
