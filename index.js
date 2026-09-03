@@ -114,6 +114,7 @@ client.getGuildConfig = (guildId) => {
             serverLog: null,
             levelChannel: null,
             welcomeChannel: null,
+            welcomeTheme: 1,
             customVoiceCategory: null,
             customVoiceChannel: null,
             customVoicePanel: null,
@@ -723,8 +724,37 @@ client.on('guildMemberAdd', async (member) => {
         const canvas = createCanvas(1024, 250);
         const ctx = canvas.getContext('2d');
 
-        // 1. Arka Plan Görseli (1024x250 Doğrudan Şeffaf PNG)
-        const bgPngPath = path.join(__dirname, 'assets', 'welcome_bg.png');
+        const themeId = guildConfig.welcomeTheme || 1;
+        const themeConfigs = {
+            1: {
+                bgFile: 'welcome_bg_1.png',
+                glowColor: 'rgba(167, 139, 250, 0.4)',
+                ringColor: '#c084fc',
+                badgeBg: 'rgba(192, 132, 252, 0.2)',
+                badgeBorder: 'rgba(192, 132, 252, 0.45)',
+                badgeText: '#d8b4fe'
+            },
+            2: {
+                bgFile: 'welcome_bg_2.png',
+                glowColor: 'rgba(56, 189, 248, 0.4)',
+                ringColor: '#38bdf8',
+                badgeBg: 'rgba(56, 189, 248, 0.2)',
+                badgeBorder: 'rgba(56, 189, 248, 0.45)',
+                badgeText: '#7dd3fc'
+            },
+            3: {
+                bgFile: 'welcome_bg_3.png',
+                glowColor: 'rgba(251, 191, 36, 0.4)',
+                ringColor: '#fbbf24',
+                badgeBg: 'rgba(244, 63, 94, 0.2)',
+                badgeBorder: 'rgba(251, 191, 36, 0.45)',
+                badgeText: '#fde68a'
+            }
+        };
+        const currentTheme = themeConfigs[themeId] || themeConfigs[1];
+
+        // 1. Arka Plan Görseli
+        const bgPngPath = path.join(__dirname, 'assets', currentTheme.bgFile);
         if (fs.existsSync(bgPngPath)) {
             const bgImage = await loadImage(fs.readFileSync(bgPngPath));
             ctx.drawImage(bgImage, 0, 0, 1024, 250);
@@ -747,14 +777,14 @@ client.on('guildMemberAdd', async (member) => {
         // Dış Glow Halkası
         ctx.beginPath();
         ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 5, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(167, 139, 250, 0.4)';
+        ctx.strokeStyle = currentTheme.glowColor;
         ctx.lineWidth = 6;
         ctx.stroke();
 
         // İç İnce Halka
         ctx.beginPath();
         ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = '#c084fc';
+        ctx.strokeStyle = currentTheme.ringColor;
         ctx.lineWidth = 3;
         ctx.stroke();
 
@@ -788,7 +818,7 @@ client.on('guildMemberAdd', async (member) => {
         drawRoundRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
         ctx.fillStyle = 'rgba(18, 16, 38, 0.65)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+        ctx.strokeStyle = currentTheme.badgeBorder;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
@@ -805,13 +835,13 @@ client.on('guildMemberAdd', async (member) => {
         ctx.font = 'bold 12px "Poppins", "Segoe UI", "Arial", sans-serif';
         const tagWidth = ctx.measureText(welcomeTag).width + 20;
         drawRoundRect(ctx, textStartX, 60, tagWidth, 24, 12);
-        ctx.fillStyle = 'rgba(192, 132, 252, 0.2)';
+        ctx.fillStyle = currentTheme.badgeBg;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
+        ctx.strokeStyle = currentTheme.badgeBorder;
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = '#d8b4fe';
+        ctx.fillStyle = currentTheme.badgeText;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(welcomeTag, textStartX + tagWidth / 2, 72);
@@ -856,9 +886,56 @@ client.on('guildMemberAdd', async (member) => {
     }
 });
 
-// --- ÖZEL ODA ETKİLEŞİM YÖNETİCİSİ (BUTONLAR, MODALLAR VE SEÇİM MENÜLERİ) ---
+// --- ÖZEL ODA VE KARŞILAMA ETKİLEŞİM YÖNETİCİSİ (BUTONLAR, MODALLAR VE SEÇİM MENÜLERİ) ---
 client.on('interactionCreate', async (interaction) => {
-    // 1. BUTON ETKİLEŞİMLERİ
+    // 0. KARŞILAMA TEMA SEÇİMİ BUTONLARI
+    if (interaction.isButton() && interaction.customId.startsWith('welcome_theme_')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu ayarı sadece sunucu yetkilileri değiştirebilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const themeNum = parseInt(interaction.customId.replace('welcome_theme_', '')) || 1;
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+        guildConfig.welcomeTheme = themeNum;
+        client.saveConfig();
+
+        const themeNames = {
+            1: 'Gece Sakurası (Mor & Lila Teması)',
+            2: 'Siber Gece Mavisi (Neon Mavi Teması)',
+            3: 'Kızıl Akşam & Altın (Amber Teması)'
+        };
+
+        const channelMention = guildConfig.welcomeChannel ? `<#${guildConfig.welcomeChannel}>` : 'Belirtilmedi';
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_1')
+                .setLabel('Tema 1')
+                .setStyle(themeNum === 1 ? ButtonStyle.Success : ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_2')
+                .setLabel('Tema 2')
+                .setStyle(themeNum === 2 ? ButtonStyle.Success : ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('welcome_theme_3')
+                .setLabel('Tema 3')
+                .setStyle(themeNum === 3 ? ButtonStyle.Success : ButtonStyle.Secondary)
+        );
+
+        const content = `## Karşılama Sistemi Aktif Edildi\n` +
+            `Karşılama kanalı: ${channelMention}\n\n` +
+            `Aşağıdaki mavi numaralara tıklayarak tema önizleme görsellerine bakabilir, beğendiğiniz temayı butonlardan seçebilirsiniz:\n\n` +
+            `• **[1](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_1.png)** — Gece Sakurası (Mor & Lila Teması)\n` +
+            `• **[2](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_2.png)** — Siber Gece Mavisi (Neon Mavi Teması)\n` +
+            `• **[3](https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_theme_3.png)** — Kızıl Akşam & Altın (Amber Teması)\n\n` +
+            `Karşılama arka planı başarıyla **Tema ${themeNum} — ${themeNames[themeNum]}** olarak ayarlandı.`;
+
+        await interaction.update({ content, components: [row] });
+        return;
+    }
+
+    // 1. ÖZEL ODA BUTON ETKİLEŞİMLERİ
     if (interaction.isButton() && interaction.customId.startsWith('ozeloda_')) {
         const userVoiceChannelId = interaction.member?.voice?.channelId;
         const room = userVoiceChannelId ? client.customVoiceRooms.get(userVoiceChannelId) : null;
