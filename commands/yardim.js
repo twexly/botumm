@@ -193,6 +193,7 @@ module.exports = {
                     ),
                     new TextDisplayBuilder().setContent(
                         '### Yönetim & Moderasyon Komutları\n' +
+                        '• **`.ticket`** `[!ticket]` : Adım adım interaktif destek paneli kurulum sihirbazını başlatır.\n' +
                         '• **`.adminrole <@rol/ID>`** : Botun yetkili/moderatör rolünü belirler.\n' +
                         '• **`.ozeloda`** : Gelişmiş butonlu özel ses odası yönetim panelini kurar.\n' +
                         '• **`.log`** : Sunucu ve moderasyon log kayıt kanallarını otomatik oluşturur.\n' +
