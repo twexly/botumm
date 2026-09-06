@@ -198,7 +198,8 @@ module.exports = {
                     `${emojis.matter} **\`.log\`** : Moderasyon ve sunucu denetim log kanallarını otomatik açar.\n` +
                     `${emojis.matter} **\`.level <#kanal>\`** : Seviye atlama kutlama kanalını ayarlar.\n` +
                     `${emojis.matter} **\`.offadd\`** : Otomatik reklam ve link engelleme korumasını açar/kapatır.\n` +
-                    `${emojis.matter} **\`.verify <@rol>\`** : Parlak tik bannerlı butonlu üye doğrulama panelini kurar.`
+                    `${emojis.matter} **\`.verify <@rol>\`** : Parlak tik bannerlı butonlu üye doğrulama panelini kurar.\n` +
+                    `${emojis.matter} **\`.sunucusablonu [isim]\`** : 4 farklı kategoride profesyonel sunucu şablonları kurar.`
                 ),
                 new TextDisplayBuilder().setContent(
                     `### ${emojis.banhammer} Moderasyon & Güvenlik Komutları\n` +

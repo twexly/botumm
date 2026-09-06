@@ -1194,6 +1194,175 @@ client.on('interactionCreate', async (interaction) => {
         return;
     }
 
+    // 0.3 SUNUCU ŞABLONU İSİM SORUSU BUTONLARI (Evet / Hayır)
+    if (interaction.isButton() && (interaction.customId === 'sablon_ask_yes' || interaction.customId === 'sablon_ask_no')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        if (interaction.customId === 'sablon_ask_yes') {
+            const modal = new ModalBuilder()
+                .setCustomId('modal_sablon_name')
+                .setTitle('Sunucu İsmi Belirleyin');
+
+            const input = new TextInputBuilder()
+                .setCustomId('input_sablon_name')
+                .setLabel('Özel Sunucu İsmi')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Örn: Twexly Roleplay / Gaming')
+                .setMaxLength(50)
+                .setRequired(true);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+            return interaction.showModal(modal);
+        }
+
+        if (interaction.customId === 'sablon_ask_no') {
+            const serverName = interaction.guild.name;
+            const sablonCmd = client.commands.get('sunucusablonu');
+            const menu = sablonCmd.generateTemplateMenu(serverName);
+            return interaction.update(menu);
+        }
+    }
+
+    // 0.4 SUNUCU ŞABLONU GERİ DÖN BUTONU
+    if (interaction.isButton() && interaction.customId.startsWith('sablon_back_')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+        const rawName = interaction.customId.replace('sablon_back_', '');
+        const serverName = decodeURIComponent(rawName) || interaction.guild.name;
+        const sablonCmd = client.commands.get('sunucusablonu');
+        const menu = sablonCmd.generateTemplateMenu(serverName);
+        return interaction.update(menu);
+    }
+
+    // 0.5 SUNUCU ŞABLONU SEÇİMİ (Detay Kartı)
+    if (interaction.isButton() && interaction.customId.startsWith('sablon_pick_')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const parts = interaction.customId.split('_'); // ['sablon', 'pick', templateKey, encodedName]
+        const templateKey = parts[2];
+        const serverName = decodeURIComponent(parts.slice(3).join('_')) || interaction.guild.name;
+
+        const sablonCmd = client.commands.get('sunucusablonu');
+        const template = sablonCmd.TEMPLATES[templateKey];
+        if (!template) {
+            return interaction.reply({ content: 'Şablon bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        let content = `## ${template.emoji} ${template.name} — ${serverName}\n` +
+            `> *${template.desc}*\n\n` +
+            `### 📁 Kurulacak Kategori ve Kanallar:\n`;
+
+        template.categories.forEach(cat => {
+            content += `• **${cat.name}**\n`;
+            cat.channels.forEach(ch => {
+                content += `  └ ${ch.type === 2 ? '🔊' : '💬'} \`${ch.name}\`\n`;
+            });
+        });
+
+        content += `\n### 👥 Kurulacak Roller:\n`;
+        content += template.roles.map(r => `\`${r.name}\``).join(' • ');
+        content += `\n\n${emojis.matter} **Önizleme Görseli:** [Tıkla ve Görsele Bak](${template.previewUrl})\n\n` +
+            `⚠️ *Aşağıdaki **Bu Sunucuya Otomatik Kur** butonuna bastığınızda bu şablondaki tüm kategoriler, kanallar ve roller anında bu sunucuda oluşturulacaktır!*`;
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`sablon_build_${templateKey}_${encodeURIComponent(serverName)}`)
+                .setLabel('Bu Sunucuya Otomatik Kur')
+                .setEmoji('1545103227865927690')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId(`sablon_back_${encodeURIComponent(serverName)}`)
+                .setLabel('Farklı Şablon Seç')
+                .setEmoji('1545103202616090724')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        return interaction.update({ content, components: [row] });
+    }
+
+    // 0.6 SUNUCU ŞABLONU OTOMATİK KURULUM MOTORU
+    if (interaction.isButton() && interaction.customId.startsWith('sablon_build_')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const parts = interaction.customId.split('_'); // ['sablon', 'build', templateKey, encodedName]
+        const templateKey = parts[2];
+        const serverName = decodeURIComponent(parts.slice(3).join('_')) || interaction.guild.name;
+
+        const sablonCmd = client.commands.get('sunucusablonu');
+        const template = sablonCmd.TEMPLATES[templateKey];
+        if (!template) {
+            return interaction.reply({ content: 'Şablon bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.deferUpdate();
+
+        let rolesCreated = 0;
+        let channelsCreated = 0;
+        let categoriesCreated = 0;
+
+        // 1. Rolleri oluştur
+        for (const roleDef of template.roles) {
+            const existingRole = interaction.guild.roles.cache.find(r => r.name.toLowerCase() === roleDef.name.toLowerCase());
+            if (!existingRole) {
+                try {
+                    await interaction.guild.roles.create({
+                        name: roleDef.name,
+                        color: roleDef.color,
+                        hoist: roleDef.hoist,
+                        reason: `${serverName} şablon kurulumu`
+                    });
+                    rolesCreated++;
+                } catch (err) {
+                    console.error("Rol oluşturma hatası:", err.message);
+                }
+            }
+        }
+
+        // 2. Kategori ve Kanalları oluştur
+        for (const catDef of template.categories) {
+            try {
+                const category = await interaction.guild.channels.create({
+                    name: catDef.name,
+                    type: ChannelType.GuildCategory,
+                    reason: `${serverName} şablon kurulumu`
+                });
+                categoriesCreated++;
+
+                for (const chDef of catDef.channels) {
+                    await interaction.guild.channels.create({
+                        name: chDef.name,
+                        type: chDef.type === 2 ? ChannelType.GuildVoice : ChannelType.GuildText,
+                        parent: category.id,
+                        reason: `${serverName} şablon kurulumu`
+                    });
+                    channelsCreated++;
+                }
+            } catch (err) {
+                console.error("Kanal oluşturma hatası:", err.message);
+            }
+        }
+
+        const doneContent = `## ${emojis.tick} Şablon Kurulumu Tamamlandı!\n` +
+            `**${serverName}** için **${template.emoji} ${template.name}** şablonu sunucunuza başarıyla uygulandı.\n\n` +
+            `${emojis.matter} **Oluşturulan Kategori:** \`${categoriesCreated}\` adet\n` +
+            `${emojis.matter} **Oluşturulan Kanal:** \`${channelsCreated}\` adet\n` +
+            `${emojis.matter} **Oluşturulan Rol:** \`${rolesCreated}\` adet\n\n` +
+            `> *Artık sunucunuz tüm kanalları, kategorileri ve rolleriyle kullanıma hazır!*`;
+
+        return interaction.editReply({ content: doneContent, components: [] });
+    }
+
     // --- ÇEKİLİŞ KATILIM VE REROLL ETKİLEŞİMLERİ ---
     if (interaction.isButton() && interaction.customId.startsWith('giveaway_join_')) {
         const giveawayId = interaction.customId.replace('giveaway_join_', '');
@@ -1700,6 +1869,19 @@ client.on('interactionCreate', async (interaction) => {
 
     // 2. MODAL YANITLARI
     if (interaction.isModalSubmit()) {
+        // --- SUNUCU ŞABLONU İSİM MODALI ---
+        if (interaction.customId === 'modal_sablon_name') {
+            if (!interaction.guild) return;
+            if (!client.isModerator(interaction.member)) {
+                return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+            }
+            const inputName = interaction.fields.getTextInputValue('input_sablon_name')?.trim();
+            const serverName = inputName || interaction.guild.name;
+            const sablonCmd = client.commands.get('sunucusablonu');
+            const menu = sablonCmd.generateTemplateMenu(serverName);
+            return interaction.reply(menu);
+        }
+
         const userVoiceChannelId = interaction.member?.voice?.channelId;
         const room = userVoiceChannelId ? client.customVoiceRooms.get(userVoiceChannelId) : null;
 
