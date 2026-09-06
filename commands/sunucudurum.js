@@ -1,4 +1,15 @@
-const { ChannelType, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { 
+    ChannelType, 
+    PermissionFlagsBits, 
+    ContainerBuilder, 
+    TextDisplayBuilder, 
+    SeparatorBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    MessageFlags, 
+    EmbedBuilder 
+} = require('discord.js');
 const emojis = require('../emojis');
 
 async function getStatsCounts(guild) {
@@ -205,22 +216,36 @@ module.exports = {
             };
             client.saveConfig();
 
-            const embed = new EmbedBuilder()
-                .setColor(0x2ECC71)
-                .setTitle('📊 Sunucu Durum Kanalları Hazırlandı!')
-                .setDescription(
-                    `Sunucunun en üstünde ses kanalları oluşturuldu.\n` +
-                    `🔒 **Özellik:** Kanallara giriş yetkisi kapalıdır (**kimse bağlanamaz**), fakat isimleri ve sayıları **herkes görebilir**.\n\n` +
-                    `• **Toplam Üye:** \`${counts.total}\`\n` +
-                    `• **Aktif Üye:** \`${counts.active}\` *(Çevrimiçi, Boşta, Rahatsız Etmeyin)*\n` +
-                    `• **Çevrimdışı:** \`${counts.offline}\`\n` +
-                    `• **Sesteki Üyeler:** \`${counts.voice}\`\n\n` +
-                    `> *Kanallar 10 dakikada bir otomatik olarak üye ve ses durumuna göre güncellenir.*`
+            const container = new ContainerBuilder()
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent('# 📊 Sunucu Durum Kanalları Hazırlandı!'),
+                    new TextDisplayBuilder().setContent(
+                        `Sunucunun en üstünde kilitli istatistik ses kanalları başarıyla oluşturuldu.\n\n` +
+                        `🔒 **Kanal Güvenliği:** Kanallara giriş yetkisi kapalıdır (**kimse bağlanamaz**), fakat isimleri ve sayıları **herkes görebilir**.\n\n` +
+                        `• **👥 Toplam Üye:** \`${counts.total}\`\n` +
+                        `• **🟢 Aktif Üye:** \`${counts.active}\` *(Çevrimiçi, Boşta, Rahatsız Etmeyin)*\n` +
+                        `• **⚫ Çevrimdışı:** \`${counts.offline}\`\n` +
+                        `• **🔊 Sesteki Üyeler:** \`${counts.voice}\`\n\n` +
+                        `> *Kanallar her 10 dakikada bir otomatik olarak üye ve ses durumuna göre güncellenir.*`
+                    )
                 )
-                .setFooter({ text: 'Kaldırmak için: .sunucudurum sil' })
-                .setTimestamp();
+                .addSeparatorComponents(new SeparatorBuilder());
 
-            return replyMsg.edit({ content: null, embeds: [embed] });
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('serverstats_refresh')
+                    .setLabel('Şimdi Güncelle')
+                    .setEmoji('🔄')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('serverstats_delete')
+                    .setLabel('Kanalları Sil')
+                    .setEmoji('🗑️')
+                    .setStyle(ButtonStyle.Danger)
+            );
+            container.addActionRowComponents(row);
+
+            return replyMsg.edit({ content: null, components: [container], flags: MessageFlags.IsComponentsV2 });
 
         } catch (err) {
             console.error('Sunucu durum oluşturma hatası:', err);

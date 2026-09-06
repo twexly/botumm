@@ -1065,6 +1065,60 @@ client.on('guildMemberAdd', async (member) => {
 
 // --- ÖZEL ODA VE KARŞILAMA ETKİLEŞİM YÖNETİCİSİ (BUTONLAR, MODALLAR VE SEÇİM MENÜLERİ) ---
 client.on('interactionCreate', async (interaction) => {
+    // FİNANS & DÖVİZ / ALTIN CANLI KURU YENİLEME BUTONU
+    if (interaction.isButton() && interaction.customId.startsWith('fin_refresh_')) {
+        const key = interaction.customId.replace('fin_refresh_', '');
+        try {
+            const { getFinanceData, buildFinanceContainer, buildMarketSummaryContainer, FINANCE_KEYS } = require('./utils/finance');
+            const data = await getFinanceData(true);
+            if (key === 'summary') {
+                const container = buildMarketSummaryContainer(data);
+                await interaction.update({ components: [container], flags: MessageFlags.IsComponentsV2 });
+            } else if (FINANCE_KEYS[key]) {
+                const container = buildFinanceContainer({ ...FINANCE_KEYS[key], data });
+                await interaction.update({ components: [container], flags: MessageFlags.IsComponentsV2 });
+            }
+        } catch (err) {
+            console.error('Finans yenileme hatası:', err);
+            await interaction.reply({ content: '❌ Canlı veri yenilenirken bir sorun oluştu.', flags: MessageFlags.Ephemeral }).catch(() => {});
+        }
+        return;
+    }
+
+    // SUNUCUDURUM İSTATİSTİK BUTONLARI
+    if (interaction.isButton() && (interaction.customId === 'serverstats_refresh' || interaction.customId === 'serverstats_delete')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const { updateServerStats } = require('./commands/sunucudurum');
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+
+        if (interaction.customId === 'serverstats_refresh') {
+            await interaction.deferUpdate().catch(() => {});
+            await updateServerStats(interaction.guild, client).catch(() => {});
+            return;
+        }
+
+        if (interaction.customId === 'serverstats_delete') {
+            if (!guildConfig.serverStats) {
+                return interaction.reply({ content: 'Zaten kurulu bir sunucu durum kanalı bulunmuyor.', flags: MessageFlags.Ephemeral });
+            }
+            const { categoryId, totalId, activeId, offlineId, voiceId } = guildConfig.serverStats;
+            const idsToDelete = [totalId, activeId, offlineId, voiceId, categoryId];
+            for (const id of idsToDelete) {
+                if (id) {
+                    const ch = interaction.guild.channels.cache.get(id);
+                    if (ch) await ch.delete('Sunucu durum butonla kaldırıldı').catch(() => {});
+                }
+            }
+            delete guildConfig.serverStats;
+            client.saveConfig();
+            return interaction.reply({ content: '✅ Sunucu durum kanalları başarıyla silindi.', flags: MessageFlags.Ephemeral });
+        }
+    }
+
     // 0. KARŞILAMA TEMA SEÇİMİ BUTONLARI
     if (interaction.isButton() && interaction.customId.startsWith('welcome_theme_')) {
         if (!interaction.guild) return;
