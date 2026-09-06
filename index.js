@@ -327,6 +327,24 @@ client.once('ready', () => {
     } catch(e) {
         console.error("ensureSetupChannel yükleme hatası:", e);
     }
+
+    // Sunucu İstatistikleri (sunucudurum) Periyodik Güncelleme (10 dakikada bir)
+    try {
+        const { updateServerStats } = require('./commands/sunucudurum');
+        setTimeout(() => {
+            client.guilds.cache.forEach(guild => {
+                updateServerStats(guild, client).catch(e => console.error(`[SunucuDurum] ${guild.name} hata:`, e.message));
+            });
+        }, 15000);
+
+        setInterval(() => {
+            client.guilds.cache.forEach(guild => {
+                updateServerStats(guild, client).catch(e => console.error(`[SunucuDurum] ${guild.name} hata:`, e.message));
+            });
+        }, 10 * 60 * 1000);
+    } catch(e) {
+        console.error("updateServerStats yükleme hatası:", e);
+    }
 });
 
 // SESLİ KANAL TAKİBİ, ÖZEL ODA VE LOG

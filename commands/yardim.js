@@ -191,6 +191,7 @@ module.exports = {
                     `• **\`.adminrole <@rol/ID>\`** : Yetkili rolünü tanımlar (**İlk Zorunlu Adım**)\n` +
                     `• **\`.kurulum\`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur\n` +
                     `• **\`.sunucusablonu [isim]\`** : 4 farklı kategoride sunucu şablonu kurar\n` +
+                    `• **\`.sunucudurum\`** : Kilitli canlı üye & ses istatistik kanallarını kurar/günceller\n` +
                     `• **\`.welcome <#kanal>\`** : 3 temalı hoş geldin karşılama panelini ayarlar\n` +
                     `• **\`.verify <@rol>\`** : Parlak tik butonlu üye doğrulama panelini kurar\n` +
                     `• **\`.ticket\`** : Görsel kılavuzlu destek bilet sistemini kurar\n` +
@@ -219,6 +220,13 @@ module.exports = {
                     `• **\`.ship <@üye>\`** : İki kullanıcı arasındaki aşk uyumunu hesaplar\n` +
                     `• **\`.ai <soru>\`** : Yapay zeka ile anlık sohbet eder ve yanıtlar\n` +
                     `• **\`.yardım\`** : Tüm komut rehberini ve bu menüyü açar`
+                ),
+                new TextDisplayBuilder().setContent(
+                    `### 🪙 Canlı Döviz & Altın Kurları\n` +
+                    `• **\`.dolar\`** / **\`.euro\`** : Anlık canlı Dolar ve Euro kurlarını gösterir\n` +
+                    `• **\`.gramaltin\`** / **\`.yarimaltin\`** / **\`.tamaltin\`** : Canlı gram, yarım ve tam altın fiyatları\n` +
+                    `• **\`.cumhuriyetaltini\`** / **\`.ceyrekaltin\`** : Canlı Cumhuriyet ve çeyrek altın fiyatları\n` +
+                    `• **\`.doviz\`** : Tüm döviz ve altın piyasasını tek kartta listeler`
                 ),
                 new TextDisplayBuilder().setContent(
                     `### 🎰 Ekonomi & Casino Sistemi\n` +
@@ -256,11 +264,15 @@ module.exports = {
                     .addFields(
                         {
                             name: '⚙️ Yönetim & Kurulum',
-                            value: '`adminrole`, `kurulum`, `sunucusablonu`, `welcome`, `verify`, `ticket`, `cekilis`, `reroll`, `ozeloda`, `log`, `level`, `offadd`'
+                            value: '`adminrole`, `kurulum`, `sunucusablonu`, `sunucudurum`, `welcome`, `verify`, `ticket`, `cekilis`, `reroll`, `ozeloda`, `log`, `level`, `offadd`'
                         },
                         {
                             name: '🛡️ Moderasyon & Güvenlik',
                             value: '`sil`, `rolekle`, `ban`, `kick`, `lock`, `unlock`, `slowmode`, `nuke`'
+                        },
+                        {
+                            name: '🪙 Canlı Döviz & Altın',
+                            value: '`dolar`, `euro`, `gramaltin`, `yarimaltin`, `tamaltin`, `cumhuriyetaltini`, `ceyrekaltin`, `doviz`'
                         },
                         {
                             name: '🎮 Genel & Eğlence',
