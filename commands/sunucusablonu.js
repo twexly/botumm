@@ -4,62 +4,140 @@ const emojis = require('../emojis');
 const TEMPLATES = {
     fivem: {
         key: 'fivem',
-        name: 'FiveM Roleplay Sunucusu',
+        name: 'FiveM Roleplay Sunucusu (Xen RP Mimarisi)',
         emoji: '🎮',
         previewUrl: 'https://raw.githubusercontent.com/twexly/botumm/main/assets/preview_sablon_fivem.png',
-        desc: 'FiveM sunucuları için Whitelist, Başvurular, IC/OOC Kanallar, LSPD, EMS ve Telsiz Ses Odaları.',
+        desc: 'Xen Roleplay (1184994484396765295) mimarisinde kapsamlı FiveM V sunucu şablonu; Departmanlar, Çeteler, Adalet, Kayıt/Başvuru ve Ses Kanalları.',
         categories: [
             {
-                name: '📢 BİLGİLENDİRME',
+                name: '📌┃{SERVER_NAME}・BİLGİ',
                 channels: [
-                    { name: '📢・duyurular', type: 0 },
-                    { name: '📜・kurallar', type: 0 },
-                    { name: '🌐・sunucu-ip', type: 0 }
+                    { name: '📍┃sınırsız-davet', type: 0 },
+                    { name: '📢┃duyurular', type: 0 },
+                    { name: '📜┃kurallar', type: 0 },
+                    { name: '🌐┃sunucu-ip', type: 0 },
+                    { name: '🎁┃etkinlik-çekiliş', type: 0 },
+                    { name: '🚀┃boost-ayrıcalıkları', type: 0 }
                 ]
             },
             {
-                name: '📝 BAŞVURULAR',
+                name: '📝┃KAYIT & BAŞVURU',
                 channels: [
-                    { name: '📝・whitelist-başvuru', type: 0 },
-                    { name: '💼・yetkili-başvuru', type: 0 },
-                    { name: '🎫・destek-talebi', type: 0 }
+                    { name: '📝┃whitelist-kayıt', type: 0 },
+                    { name: '👮┃lspd-başvuru', type: 0 },
+                    { name: '🚑┃ems-başvuru', type: 0 },
+                    { name: '🔫┃çete-aile-başvuru', type: 0 },
+                    { name: '💼┃işletme-başvuru', type: 0 },
+                    { name: '🛡️┃yetkili-başvuru', type: 0 }
                 ]
             },
             {
-                name: '💬 GENEL ALAN',
+                name: '💬┃GENEL TOPLULUK',
                 channels: [
-                    { name: '💬・genel-sohbet', type: 0 },
-                    { name: '📷・medya-klip', type: 0 },
-                    { name: '💰・ic-ticaret', type: 0 }
+                    { name: '💬┃genel-sohbet', type: 0 },
+                    { name: '📸┃foto-medya', type: 0 },
+                    { name: '🎬┃klip-video', type: 0 },
+                    { name: '🤖┃bot-komut', type: 0 },
+                    { name: '💰┃ic-ticaret-pazar', type: 0 },
+                    { name: '📰┃sarı-sayfalar', type: 0 }
                 ]
             },
             {
-                name: '🚨 LSPD & EMS DEPARTMANLARI',
+                name: '🎫┃DESTEK MERKEZİ',
                 channels: [
-                    { name: '🚨・lspd-duyuru', type: 0 },
-                    { name: '🚑・ems-duyuru', type: 0 },
-                    { name: '📻 LSPD Telsiz 1', type: 2 },
-                    { name: '📻 EMS Telsiz 1', type: 2 }
+                    { name: '🎫┃destek-talebi', type: 0 },
+                    { name: '💡┃öneri-istek', type: 0 },
+                    { name: '🐛┃bug-raporu', type: 0 },
+                    { name: '🚨┃oyuncu-şikayet', type: 0 },
+                    { name: '⚖️┃ck-talepleri', type: 0 }
                 ]
             },
             {
-                name: '🔊 SES KANALLARI',
+                name: '🚨┃DEPARTMAN | LSPD',
                 channels: [
-                    { name: '🔊 Sohbet Odası 1', type: 2 },
-                    { name: '🔊 Sohbet Odası 2', type: 2 },
-                    { name: '⏳ Destek Bekleme', type: 2 }
+                    { name: '📢┃lspd-duyuru', type: 0 },
+                    { name: '📋┃sabıka-sicil-kayıt', type: 0 },
+                    { name: '🔫┃el-konulan-esyalar', type: 0 },
+                    { name: '📻 LSPD Genel Telsiz', type: 2 },
+                    { name: '📻 LSPD Devriye 1', type: 2 },
+                    { name: '📻 LSPD Devriye 2', type: 2 },
+                    { name: '📻 LSPD Operasyon', type: 2 }
+                ]
+            },
+            {
+                name: '🚑┃DEPARTMAN | EMS',
+                channels: [
+                    { name: '📢┃ems-duyuru', type: 0 },
+                    { name: '📋┃hasta-kayıt', type: 0 },
+                    { name: '💊┃ilaç-rapor-teslim', type: 0 },
+                    { name: '📻 EMS Genel Telsiz', type: 2 },
+                    { name: '📻 EMS Nöbet Odası', type: 2 }
+                ]
+            },
+            {
+                name: '⚖️┃ADALET & İŞLETMELER',
+                channels: [
+                    { name: '⚖️┃mahkeme-duyuru', type: 0 },
+                    { name: '📜┃dava-dosyaları', type: 0 },
+                    { name: '🏢┃onaylı-işletmeler', type: 0 },
+                    { name: '🚗┃galeri-araçlar', type: 0 }
+                ]
+            },
+            {
+                name: '🔫┃İLLEGAL & ÇETELER',
+                channels: [
+                    { name: '🔫┃illegal-kurallar', type: 0 },
+                    { name: '🏴┃çete-duyuruları', type: 0 },
+                    { name: '⚔️┃redzone-bilgilendirme', type: 0 },
+                    { name: '📻 İllegal Telsiz 1', type: 2 },
+                    { name: '📻 İllegal Telsiz 2', type: 2 }
+                ]
+            },
+            {
+                name: '🔊┃GENEL SES ODALARI',
+                channels: [
+                    { name: '☕ Muhabbet 1', type: 2 },
+                    { name: '☕ Muhabbet 2', type: 2 },
+                    { name: '🎮 Oyun & Yayın 1', type: 2 },
+                    { name: '🎮 Oyun & Yayın 2', type: 2 },
+                    { name: '⏳ Destek Bekleme 1', type: 2 },
+                    { name: '⏳ Destek Bekleme 2', type: 2 }
+                ]
+            },
+            {
+                name: '👑┃YÖNETİM & TOPLANTI',
+                channels: [
+                    { name: '🔒┃yetkili-sohbet', type: 0 },
+                    { name: '🔒┃yetkili-duyuru', type: 0 },
+                    { name: '🔒┃rol-hatası-bildirim', type: 0 },
+                    { name: '🔒 Yönetim Toplantı Odası', type: 2 },
+                    { name: '🔒 Supervisor Odası', type: 2 }
                 ]
             }
         ],
         roles: [
-            { name: '👑 Yönetici', color: '#E74C3C', hoist: true },
-            { name: '⭐ Admin', color: '#E67E22', hoist: true },
-            { name: '👮 LSPD Şefi', color: '#3498DB', hoist: true },
-            { name: '🚑 EMS Şefi', color: '#2ECC71', hoist: true },
-            { name: '💼 Yetkili Ekip', color: '#9B59B6', hoist: true },
-            { name: '🔫 Çete Lideri', color: '#1ABC9C', hoist: true },
-            { name: '📜 Whitelist Üye', color: '#F1C40F', hoist: true },
-            { name: '🎮 Oyuncu', color: '#95A5A6', hoist: false }
+            { name: '👑 {SERVER_NAME} | Founder', color: '#E74C3C', hoist: true },
+            { name: '⭐ {SERVER_NAME} | Project Director', color: '#C0392B', hoist: true },
+            { name: '⚡ {SERVER_NAME} | Master', color: '#9B59B6', hoist: true },
+            { name: '💎 {SERVER_NAME} | Management', color: '#8E44AD', hoist: true },
+            { name: '🛡️ {SERVER_NAME} | Head Admin', color: '#E67E22', hoist: true },
+            { name: '💼 {SERVER_NAME} | Administrator', color: '#F39C12', hoist: true },
+            { name: '👔 {SERVER_NAME} | Supervisor', color: '#16A085', hoist: true },
+            { name: '⚖️ {SERVER_NAME} | Head Moderator', color: '#1ABC9C', hoist: true },
+            { name: '🔧 {SERVER_NAME} | Moderator', color: '#2ECC71', hoist: true },
+            { name: '🎮 {SERVER_NAME} | Game Staff', color: '#27AE60', hoist: true },
+            { name: '👮 Chief of Police (LSPD)', color: '#2980B9', hoist: true },
+            { name: '👮 Police Officer', color: '#3498DB', hoist: true },
+            { name: '🚑 Chief of EMS', color: '#E91E63', hoist: true },
+            { name: '🚑 Paramedic (EMS)', color: '#FF7675', hoist: true },
+            { name: '⚖️ Başsavcı / Hakim', color: '#6C5CE7', hoist: true },
+            { name: '🏢 Onaylı İşletme Sahibi', color: '#D35400', hoist: true },
+            { name: '🔫 Çete / Aile Lideri', color: '#2D3436', hoist: true },
+            { name: '🔫 Çete / Aile Üyesi', color: '#636E72', hoist: true },
+            { name: '🚀 Server Booster', color: '#FD79A8', hoist: true },
+            { name: '💎 Sponsor / Donator', color: '#F1C40F', hoist: true },
+            { name: '📜 Whitelist Oyuncu', color: '#00CEC9', hoist: true },
+            { name: '🎮 {SERVER_NAME} Oyuncusu', color: '#B2BEC3', hoist: false }
         ]
     },
     mc: {
@@ -242,12 +320,24 @@ function generateTemplateMenu(serverName) {
     return { content, components: [row] };
 }
 
+function getResolvedTemplate(templateKey, serverName) {
+    const raw = TEMPLATES[templateKey];
+    if (!raw) return null;
+    const name = (serverName && serverName.trim()) ? serverName.trim() : 'Roleplay';
+
+    const jsonStr = JSON.stringify(raw);
+    const replaced = jsonStr.replace(/\{SERVER_NAME\}/g, name);
+
+    return JSON.parse(replaced);
+}
+
 module.exports = {
     name: 'sunucusablonu',
     aliases: ['sunucuşablonu', 'sablon', 'şablon', 'template', 'templates'],
     modOnly: true,
     description: 'Profesyonel sunucu şablonlarını görsel önizlemeleriyle sunar ve tek tıkla otomatik kurar.',
     TEMPLATES,
+    getResolvedTemplate,
     generateTemplateMenu,
     async execute(message, client, args) {
         if (!message.guild) return;

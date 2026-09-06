@@ -1251,26 +1251,32 @@ client.on('interactionCreate', async (interaction) => {
         const serverName = decodeURIComponent(parts.slice(3).join('_')) || interaction.guild.name;
 
         const sablonCmd = client.commands.get('sunucusablonu');
-        const template = sablonCmd.TEMPLATES[templateKey];
+        const template = (sablonCmd && sablonCmd.getResolvedTemplate)
+            ? sablonCmd.getResolvedTemplate(templateKey, serverName)
+            : sablonCmd?.TEMPLATES[templateKey];
+
         if (!template) {
             return interaction.reply({ content: 'Şablon bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
+        const totalChannels = template.categories.reduce((sum, c) => sum + c.channels.length, 0);
+
         let content = `## ${template.emoji} ${template.name} — ${serverName}\n` +
             `> *${template.desc}*\n\n` +
-            `### 📁 Kurulacak Kategori ve Kanallar:\n`;
+            `### 📁 Kurulacak Kategori ve Kanallar (\`${totalChannels}\` adet):\n`;
 
         template.categories.forEach(cat => {
-            content += `• **${cat.name}**\n`;
-            cat.channels.forEach(ch => {
-                content += `  └ ${ch.type === 2 ? '🔊' : '💬'} \`${ch.name}\`\n`;
-            });
+            const chPreview = cat.channels.slice(0, 3).map(ch => `${ch.type === 2 ? '🔊' : '💬'} \`${ch.name}\``).join(' ');
+            const more = cat.channels.length > 3 ? ` *(+${cat.channels.length - 3} kanal)*` : '';
+            content += `• **${cat.name}**: ${chPreview}${more}\n`;
         });
 
-        content += `\n### 👥 Kurulacak Roller:\n`;
-        content += template.roles.map(r => `\`${r.name}\``).join(' • ');
-        content += `\n\n${emojis.matter} **Önizleme Görseli:** [Tıkla ve Görsele Bak](${template.previewUrl})\n\n` +
-            `⚠️ *Aşağıdaki **Bu Sunucuya Otomatik Kur** butonuna bastığınızda bu şablondaki tüm kategoriler, kanallar ve roller anında bu sunucuda oluşturulacaktır!*`;
+        content += `\n### 👥 Kurulacak Roller (\`${template.roles.length}\` adet):\n`;
+        const rolePreview = template.roles.slice(0, 8).map(r => `\`${r.name}\``).join(' • ');
+        content += `${rolePreview}${template.roles.length > 8 ? ` • *+${template.roles.length - 8} rol daha...*` : ''}\n`;
+
+        content += `\n${emojis.matter} **Önizleme Görseli:** [Tıkla ve Görsele Bak](${template.previewUrl})\n\n` +
+            `⚠️ *Aşağıdaki **Bu Sunucuya Otomatik Kur** butonuna bastığınızda sunucu adı **${serverName}** yapılacak, tüm kategoriler, kanallar ve roller anında oluşturulacaktır!*`;
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -1300,12 +1306,26 @@ client.on('interactionCreate', async (interaction) => {
         const serverName = decodeURIComponent(parts.slice(3).join('_')) || interaction.guild.name;
 
         const sablonCmd = client.commands.get('sunucusablonu');
-        const template = sablonCmd.TEMPLATES[templateKey];
+        const template = (sablonCmd && sablonCmd.getResolvedTemplate)
+            ? sablonCmd.getResolvedTemplate(templateKey, serverName)
+            : sablonCmd?.TEMPLATES[templateKey];
+
         if (!template) {
             return interaction.reply({ content: 'Şablon bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
         await interaction.deferUpdate();
+
+        // 0. Sunucu Adını Güncelle
+        let guildRenamed = false;
+        if (serverName && interaction.guild.name !== serverName) {
+            try {
+                await interaction.guild.setName(serverName);
+                guildRenamed = true;
+            } catch (err) {
+                console.error("Sunucu ismi değiştirilemedi:", err.message);
+            }
+        }
 
         let rolesCreated = 0;
         let channelsCreated = 0;
@@ -1355,6 +1375,7 @@ client.on('interactionCreate', async (interaction) => {
 
         const doneContent = `## ${emojis.tick} Şablon Kurulumu Tamamlandı!\n` +
             `**${serverName}** için **${template.emoji} ${template.name}** şablonu sunucunuza başarıyla uygulandı.\n\n` +
+            `${emojis.matter} **Sunucu İsmi:** \`${interaction.guild.name}\` ${guildRenamed ? '(Güncellendi ✅)' : ''}\n` +
             `${emojis.matter} **Oluşturulan Kategori:** \`${categoriesCreated}\` adet\n` +
             `${emojis.matter} **Oluşturulan Kanal:** \`${channelsCreated}\` adet\n` +
             `${emojis.matter} **Oluşturulan Rol:** \`${rolesCreated}\` adet\n\n` +
