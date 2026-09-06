@@ -1,4 +1,4 @@
-const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, MediaGalleryBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
+const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, MediaGalleryBuilder, MessageFlags, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const { createCanvas } = require('canvas');
 const emojis = require('../emojis');
 
@@ -188,53 +188,53 @@ module.exports = {
             container.addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(
                     `### ${emojis.settings} Yönetim & Kurulum Sistemleri\n` +
-                    `${emojis.matter} **\`.adminrole <@rol/ID>\`** : Botun yetkili rolünü tanımlar (**İlk Zorunlu Adım**).\n` +
-                    `${emojis.matter} **\`.kurulum\`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur.\n` +
-                    `${emojis.matter} **\`.cekilis <ödül> <kişi> <süre> <açıklama>\`** : Butonlu şık çekiliş başlatır.\n` +
-                    `${emojis.matter} **\`.reroll [mesajID]\`** : Sona eren çekiliş için yeniden kazanan belirler.\n` +
-                    `${emojis.matter} **\`.ticket\`** : Görsel kılavuzlu adım adım bilet paneli kurar.\n` +
-                    `${emojis.matter} **\`.welcome <#kanal>\`** : 3 temalı hoş geldin resimli karşılama kanalını ayarlar.\n` +
-                    `${emojis.matter} **\`.ozeloda\`** : Butonlu özel ses odası yönetim panelini kurar.\n` +
-                    `${emojis.matter} **\`.log\`** : Moderasyon ve sunucu denetim log kanallarını otomatik açar.\n` +
-                    `${emojis.matter} **\`.level <#kanal>\`** : Seviye atlama kutlama kanalını ayarlar.\n` +
-                    `${emojis.matter} **\`.offadd\`** : Otomatik reklam ve link engelleme korumasını açar/kapatır.\n` +
-                    `${emojis.matter} **\`.verify <@rol>\`** : Parlak tik bannerlı butonlu üye doğrulama panelini kurar.\n` +
-                    `${emojis.matter} **\`.sunucusablonu [isim]\`** : 4 farklı kategoride profesyonel sunucu şablonları kurar.`
+                    `• **\`.adminrole <@rol/ID>\`** : Yetkili rolünü tanımlar (**İlk Zorunlu Adım**)\n` +
+                    `• **\`.kurulum\`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur\n` +
+                    `• **\`.sunucusablonu [isim]\`** : 4 farklı kategoride sunucu şablonu kurar\n` +
+                    `• **\`.welcome <#kanal>\`** : 3 temalı hoş geldin karşılama panelini ayarlar\n` +
+                    `• **\`.verify <@rol>\`** : Parlak tik butonlu üye doğrulama panelini kurar\n` +
+                    `• **\`.ticket\`** : Görsel kılavuzlu destek bilet sistemini kurar\n` +
+                    `• **\`.cekilis <ödül> <kişi> <süre> <not>\`** : Butonlu şık çekiliş başlatır\n` +
+                    `• **\`.reroll [mesajID]\`** : Çekilişte kazananı yeniden belirler\n` +
+                    `• **\`.ozeloda\`** : Butonlu özel ses odası yönetim panelini kurar\n` +
+                    `• **\`.log\`** : Moderasyon ve denetim log kanallarını otomatik açar\n` +
+                    `• **\`.level <#kanal>\`** : Seviye atlama kutlama kanalını ayarlar\n` +
+                    `• **\`.offadd\`** : Otomatik reklam & link engelleme korumasını açar/kapatır`
                 ),
                 new TextDisplayBuilder().setContent(
                     `### ${emojis.banhammer} Moderasyon & Güvenlik Komutları\n` +
-                    `${emojis.matter} **\`.rolekle <@üye> <@rol>\`** : Üyeye güvenli şekilde rol verir.\n` +
-                    `${emojis.matter} **\`.ban <@üye>\`** / **\`.kick <@üye>\`** : Kullanıcıyı sunucudan yasaklar veya atar.\n` +
-                    `${emojis.matter} **\`.lock\`** / **\`.unlock\`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar.\n` +
-                    `${emojis.matter} **\`.slowmode <saniye>\`** : Kanal için yavaş mod süresini ayarlar.\n` +
-                    `${emojis.matter} **\`.nuke\`** : Kanalı klonlayıp tüm eski mesajları temizler.`
+                    `• **\`.rolekle <@üye> <@rol>\`** : Üyeye güvenli şekilde rol verir\n` +
+                    `• **\`.ban <@üye>\`** / **\`.kick <@üye>\`** : Kullanıcıyı sunucudan yasaklar veya atar\n` +
+                    `• **\`.lock\`** / **\`.unlock\`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar\n` +
+                    `• **\`.slowmode <saniye>\`** : Kanal için yavaş mod süresini ayarlar\n` +
+                    `• **\`.nuke\`** : Kanalı klonlayıp tüm eski mesajları temizler`
                 ),
                 new TextDisplayBuilder().setContent(
                     '### 🎮 Genel & Eğlence Komutları\n' +
-                    `${emojis.matter} **\`.rank\`** : Seviye, XP ve sunucu sıralama kartınızı gösterir.\n` +
-                    `${emojis.matter} **\`.toplevel\`** : Sunucunun en aktif üyelerini (mesaj, ses, seviye) listeler.\n` +
-                    `${emojis.matter} **\`.say\`** : Sunucudaki üye, kanal, rol ve boost istatistiklerini resimli kartla gösterir.\n` +
-                    `${emojis.matter} **\`.dev\`** : Bot geliştiricisi (${emojis.developer} twexly) bilgilerini gösterir.\n` +
-                    `${emojis.matter} **\`.ship <@üye>\`** : İki kullanıcı arasındaki aşk ve uyum yüzdesini hesaplar.\n` +
-                    `${emojis.matter} **\`.ai <soru>\`** : Yapay zeka ile anlık sohbet eder ve sorularınızı yanıtlar.\n` +
-                    `${emojis.matter} **\`.yardım\`** : Tüm komut rehberini ve bu menüyü açar.`
+                    `• **\`.rank\`** : Seviye, XP ve sunucu sıralama kartınızı gösterir\n` +
+                    `• **\`.toplevel\`** : En aktif üyelerin liderlik sıralamasını listeler\n` +
+                    `• **\`.say\`** : Üye, kanal, rol ve boost istatistik kartını gösterir\n` +
+                    `• **\`.dev\`** : Bot geliştiricisi (${emojis.developer} twexly) bilgilerini gösterir\n` +
+                    `• **\`.ship <@üye>\`** : İki kullanıcı arasındaki aşk uyumunu hesaplar\n` +
+                    `• **\`.ai <soru>\`** : Yapay zeka ile anlık sohbet eder ve yanıtlar\n` +
+                    `• **\`.yardım\`** : Tüm komut rehberini ve bu menüyü açar`
                 ),
                 new TextDisplayBuilder().setContent(
                     `### 🎰 Ekonomi & Casino Sistemi\n` +
-                    `${emojis.matter} **\`.bakiye [@üye]\`** : Cüzdan, banka ve toplam servet kartınızı HD görselle gösterir.\n` +
-                    `${emojis.matter} **\`.günlük\`** : 24 saatte bir günlük maaşınızı hesabınıza aktarır.\n` +
-                    `${emojis.matter} **\`.çalış\`** : Çeşitli işlerde çalışarak 30 dakikada bir para kazandırır.\n` +
-                    `${emojis.matter} **\`.soygun <@üye>\`** : Başka bir üyeyi soymayı denersiniz (%45 şans).\n` +
-                    `${emojis.matter} **\`.transfer <@üye> <miktar>\`** : Başka bir üyeye nakit para gönderir.\n` +
-                    `${emojis.matter} **\`.slot <miktar>\`** : 🍒 🍋 💎 7️⃣ slot makinesinde şansınızı denersiniz.\n` +
-                    `${emojis.matter} **\`.blackjack <miktar>\`** : Krupiyeye karşı butonlu 21 kart oyunu oynarsınız.\n` +
-                    `${emojis.matter} **\`.yazıtura <yazı/tura> <miktar>\`** : Parayı ikiye katlamak için yazı tura atarsınız.\n` +
-                    `${emojis.matter} **\`.zenginler\`** : Sunucunun en zengin 10 üyesini listeler.`
+                    `• **\`.bakiye [@üye]\`** : Cüzdan, banka ve toplam servet kartınızı gösterir\n` +
+                    `• **\`.günlük\`** : 24 saatte bir günlük maaşınızı hesabınıza aktarır\n` +
+                    `• **\`.çalış\`** : Çeşitli işlerde çalışarak 30 dakikada bir para kazandırır\n` +
+                    `• **\`.soygun <@üye>\`** : Başka bir üyeyi soymayı denersiniz (%45 şans)\n` +
+                    `• **\`.transfer <@üye> <miktar>\`** : Başka bir üyeye nakit para gönderir\n` +
+                    `• **\`.slot <miktar>\`** : Slot makinesinde şansınızı denersiniz\n` +
+                    `• **\`.blackjack <miktar>\`** : Krupiyeye karşı butonlu 21 kart oyunu oynarsınız\n` +
+                    `• **\`.yazıtura <yazı/tura> <miktar>\`** : Parayı ikiye katlamak için yazı tura atarsınız\n` +
+                    `• **\`.zenginler\`** : Sunucunun en zengin 10 üyesini listeler`
                 ),
                 new TextDisplayBuilder().setContent(
                     `### ⚽ Süper Lig & Futbol\n` +
-                    `${emojis.matter} **\`.superlig\`** : Süper Lig takım rollerini oluşturur ve seçim menüsünü gönderir.\n` +
-                    `${emojis.matter} **\`.puandurumu\`** : FlashScore üzerinden canlı Süper Lig puan durumu tablosunu anlık çeker.`
+                    `• **\`.superlig\`** : Süper Lig takım rollerini oluşturur ve seçim menüsünü gönderir\n` +
+                    `• **\`.puandurumu\`** : FlashScore üzerinden canlı Süper Lig puan durumu tablosunu çeker`
                 )
             );
 
@@ -245,8 +245,42 @@ module.exports = {
             });
 
         } catch (error) {
-            console.error("Yardım komutu hatası:", error);
-            message.reply("Yardım menüsü oluşturulurken bir hata meydana geldi.");
+            console.error("Yardım komutu hatası (Components V2):", error);
+            try {
+                const embed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle('📖 Komut Rehberi ve Kullanım Kılavuzu')
+                    .setDescription('*Tüm komutları hem `.` hem de `!` prefixi ile kullanabilirsiniz.*')
+                    .setImage('attachment://help_banner.png')
+                    .addFields(
+                        {
+                            name: '⚙️ Yönetim & Kurulum',
+                            value: '`adminrole`, `kurulum`, `sunucusablonu`, `welcome`, `verify`, `ticket`, `cekilis`, `reroll`, `ozeloda`, `log`, `level`, `offadd`'
+                        },
+                        {
+                            name: '🛡️ Moderasyon & Güvenlik',
+                            value: '`rolekle`, `ban`, `kick`, `lock`, `unlock`, `slowmode`, `nuke`'
+                        },
+                        {
+                            name: '🎮 Genel & Eğlence',
+                            value: '`rank`, `toplevel`, `say`, `dev`, `ship`, `ai`, `yardım`'
+                        },
+                        {
+                            name: '🎰 Ekonomi & Casino',
+                            value: '`bakiye`, `günlük`, `çalış`, `soygun`, `transfer`, `slot`, `blackjack`, `yazıtura`, `zenginler`'
+                        },
+                        {
+                            name: '⚽ Süper Lig',
+                            value: '`superlig`, `puandurumu`'
+                        }
+                    );
+                const bannerBuffer = generateHelpBanner();
+                const attachment = new AttachmentBuilder(bannerBuffer, { name: 'help_banner.png' });
+                await message.reply({ embeds: [embed], files: [attachment] });
+            } catch (fallbackErr) {
+                console.error("Yardım fallback hatası:", fallbackErr);
+                message.reply("Yardım menüsü oluşturulurken bir hata meydana geldi.");
+            }
         }
     }
 };

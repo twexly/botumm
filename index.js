@@ -1294,7 +1294,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.update({ content, components: [row] });
     }
 
-    // 0.6 SUNUCU ŞABLONU OTOMATİK KURULUM MOTORU
+    // 0.6 SUNUCU ŞABLONU KANAL TEMİZLEME ONAYI (Bütün kanalları silsin mi?)
     if (interaction.isButton() && interaction.customId.startsWith('sablon_build_')) {
         if (!interaction.guild) return;
         if (!client.isModerator(interaction.member)) {
@@ -1304,6 +1304,55 @@ client.on('interactionCreate', async (interaction) => {
         const parts = interaction.customId.split('_'); // ['sablon', 'build', templateKey, encodedName]
         const templateKey = parts[2];
         const serverName = decodeURIComponent(parts.slice(3).join('_')) || interaction.guild.name;
+
+        const sablonCmd = client.commands.get('sunucusablonu');
+        const template = (sablonCmd && sablonCmd.getResolvedTemplate)
+            ? sablonCmd.getResolvedTemplate(templateKey, serverName)
+            : sablonCmd?.TEMPLATES[templateKey];
+
+        if (!template) {
+            return interaction.reply({ content: 'Şablon bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        const confirmContent = `## ⚠️ Mevcut Kanalları Silmek İstiyor musunuz?\n` +
+            `**${serverName}** için **${template.emoji} ${template.name}** şablonu kurulurken sunucunuzdaki **mevcut tüm kanalların silinmesini** ister misiniz?\n\n` +
+            `> 🗑️ **Evet, Kanalları Sil:** Sunucudaki eski tüm kanal ve kategorileri siler, sıfırdan tertemiz bir şekilde şablonu kurar.\n` +
+            `> ✨ **Hayır, Kanalları Koru:** Mevcut kanallarınıza dokunmaz, şablon kanallarını ve rollerini sunucunuza ekler.\n\n` +
+            `*Lütfen tercihinizi aşağıdaki butonlardan seçin:*`;
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`sablon_wipe_yes_${templateKey}_${encodeURIComponent(serverName)}`)
+                .setLabel('Evet, Kanalları Sil ve Kur')
+                .setEmoji('🗑️')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId(`sablon_wipe_no_${templateKey}_${encodeURIComponent(serverName)}`)
+                .setLabel('Hayır, Kanalları Koru ve Kur')
+                .setEmoji('✨')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId(`sablon_pick_${templateKey}_${encodeURIComponent(serverName)}`)
+                .setLabel('Geri Dön')
+                .setEmoji('1545103202616090724')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        return interaction.update({ content: confirmContent, components: [row] });
+    }
+
+    // 0.7 SUNUCU ŞABLONU OTOMATİK KURULUM MOTORU (Kanal Silmeli veya Korumalı)
+    if (interaction.isButton() && (interaction.customId.startsWith('sablon_wipe_yes_') || interaction.customId.startsWith('sablon_wipe_no_'))) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const isWipe = interaction.customId.startsWith('sablon_wipe_yes_');
+        const prefix = isWipe ? 'sablon_wipe_yes_' : 'sablon_wipe_no_';
+        const parts = interaction.customId.replace(prefix, '').split('_');
+        const templateKey = parts[0];
+        const serverName = decodeURIComponent(parts.slice(1).join('_')) || interaction.guild.name;
 
         const sablonCmd = client.commands.get('sunucusablonu');
         const template = (sablonCmd && sablonCmd.getResolvedTemplate)
@@ -1330,6 +1379,7 @@ client.on('interactionCreate', async (interaction) => {
         let rolesCreated = 0;
         let channelsCreated = 0;
         let categoriesCreated = 0;
+        let channelsDeleted = 0;
 
         // 1. Rolleri oluştur
         for (const roleDef of template.roles) {
@@ -1349,7 +1399,22 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        // 2. Kategori ve Kanalları oluştur
+        // 2. Mevcut kanalları sil (Eğer Evet seçildiyse)
+        const currentChannelId = interaction.channelId;
+        if (isWipe) {
+            const channelsToDelete = interaction.guild.channels.cache.filter(c => c.id !== currentChannelId);
+            for (const [, ch] of channelsToDelete) {
+                try {
+                    await ch.delete(`${serverName} şablon temizliği`);
+                    channelsDeleted++;
+                } catch (err) {
+                    console.error("Kanal silme hatası:", err.message);
+                }
+            }
+        }
+
+        // 3. Şablon Kategori ve Kanallarını oluştur
+        let firstCreatedTextChannel = null;
         for (const catDef of template.categories) {
             try {
                 const category = await interaction.guild.channels.create({
@@ -1360,13 +1425,16 @@ client.on('interactionCreate', async (interaction) => {
                 categoriesCreated++;
 
                 for (const chDef of catDef.channels) {
-                    await interaction.guild.channels.create({
+                    const ch = await interaction.guild.channels.create({
                         name: chDef.name,
                         type: chDef.type === 2 ? ChannelType.GuildVoice : ChannelType.GuildText,
                         parent: category.id,
                         reason: `${serverName} şablon kurulumu`
                     });
                     channelsCreated++;
+                    if (!firstCreatedTextChannel && chDef.type !== 2) {
+                        firstCreatedTextChannel = ch;
+                    }
                 }
             } catch (err) {
                 console.error("Kanal oluşturma hatası:", err.message);
@@ -1376,10 +1444,27 @@ client.on('interactionCreate', async (interaction) => {
         const doneContent = `## ${emojis.tick} Şablon Kurulumu Tamamlandı!\n` +
             `**${serverName}** için **${template.emoji} ${template.name}** şablonu sunucunuza başarıyla uygulandı.\n\n` +
             `${emojis.matter} **Sunucu İsmi:** \`${interaction.guild.name}\` ${guildRenamed ? '(Güncellendi ✅)' : ''}\n` +
+            (isWipe ? `${emojis.matter} **Silinen Eski Kanal:** \`${channelsDeleted + 1}\` adet\n` : '') +
             `${emojis.matter} **Oluşturulan Kategori:** \`${categoriesCreated}\` adet\n` +
             `${emojis.matter} **Oluşturulan Kanal:** \`${channelsCreated}\` adet\n` +
             `${emojis.matter} **Oluşturulan Rol:** \`${rolesCreated}\` adet\n\n` +
             `> *Artık sunucunuz tüm kanalları, kategorileri ve rolleriyle kullanıma hazır!*`;
+
+        if (isWipe) {
+            if (firstCreatedTextChannel) {
+                await firstCreatedTextChannel.send({ content: doneContent }).catch(() => {});
+            }
+            try {
+                await interaction.editReply({ content: '✅ Kurulum tamamlandı! Eski komut kanalı siliniyor...', components: [] });
+                const curChan = interaction.guild.channels.cache.get(currentChannelId);
+                if (curChan) {
+                    await curChan.delete(`${serverName} şablon tamamlama temizliği`).catch(() => {});
+                }
+            } catch (err) {
+                console.error("Etkileşim kanalı silme hatası:", err.message);
+            }
+            return;
+        }
 
         return interaction.editReply({ content: doneContent, components: [] });
     }
