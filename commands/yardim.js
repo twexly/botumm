@@ -203,6 +203,7 @@ module.exports = {
                 ),
                 new TextDisplayBuilder().setContent(
                     `### ${emojis.banhammer} Moderasyon & Güvenlik Komutları\n` +
+                    `• **\`.sil <sayı>\`** : Belirtilen sayıda mesajı toplu siler\n` +
                     `• **\`.rolekle <@üye> <@rol>\`** : Üyeye güvenli şekilde rol verir\n` +
                     `• **\`.ban <@üye>\`** / **\`.kick <@üye>\`** : Kullanıcıyı sunucudan yasaklar veya atar\n` +
                     `• **\`.lock\`** / **\`.unlock\`** : Bulunduğunuz kanala mesaj yazımını kilitler veya açar\n` +
@@ -259,7 +260,7 @@ module.exports = {
                         },
                         {
                             name: '🛡️ Moderasyon & Güvenlik',
-                            value: '`rolekle`, `ban`, `kick`, `lock`, `unlock`, `slowmode`, `nuke`'
+                            value: '`sil`, `rolekle`, `ban`, `kick`, `lock`, `unlock`, `slowmode`, `nuke`'
                         },
                         {
                             name: '🎮 Genel & Eğlence',
