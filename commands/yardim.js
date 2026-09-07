@@ -192,6 +192,7 @@ module.exports = {
                     `• **\`.kurulum\`** : Başlangıç rehber kanalını (**#bot-kurulum**) oluşturur\n` +
                     `• **\`.sunucusablonu [isim]\`** : 4 farklı kategoride sunucu şablonu kurar\n` +
                     `• **\`.sunucudurum\`** : Kilitli canlı üye & ses istatistik kanallarını kurar/günceller\n` +
+                    `• **\`.tagrol <tag> @rol\`** : Sunucu tagı alanlara otomatik rol verir/alır\n` +
                     `• **\`.welcome <#kanal>\`** : 3 temalı hoş geldin karşılama panelini ayarlar\n` +
                     `• **\`.verify <@rol>\`** : Parlak tik butonlu üye doğrulama panelini kurar\n` +
                     `• **\`.ticket\`** : Görsel kılavuzlu destek bilet sistemini kurar\n` +
@@ -264,7 +265,7 @@ module.exports = {
                     .addFields(
                         {
                             name: '⚙️ Yönetim & Kurulum',
-                            value: '`adminrole`, `kurulum`, `sunucusablonu`, `sunucudurum`, `welcome`, `verify`, `ticket`, `cekilis`, `reroll`, `ozeloda`, `log`, `level`, `offadd`'
+                            value: '`adminrole`, `kurulum`, `sunucusablonu`, `sunucudurum`, `tagrol`, `welcome`, `verify`, `ticket`, `cekilis`, `reroll`, `ozeloda`, `log`, `level`, `offadd`'
                         },
                         {
                             name: '🛡️ Moderasyon & Güvenlik',

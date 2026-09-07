@@ -554,6 +554,28 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
             `**Yeni İsim:** \`${newMember.nickname || newMember.user.username}\``
         ]);
     }
+
+    // Tag Rol Kontrolü (İsim veya rol güncellendiğinde)
+    try {
+        const { handleMemberTagRole } = require('./commands/tagrol');
+        await handleMemberTagRole(newMember, client);
+    } catch (e) {}
+});
+
+// Global Kullanıcı Güncellemesi (Kullanıcı adı veya global görünen adı değiştiğinde)
+client.on('userUpdate', async (oldUser, newUser) => {
+    if (newUser.bot) return;
+    try {
+        const { handleMemberTagRole } = require('./commands/tagrol');
+        for (const guild of client.guilds.cache.values()) {
+            const member = guild.members.cache.get(newUser.id) || await guild.members.fetch(newUser.id).catch(() => null);
+            if (member) {
+                await handleMemberTagRole(member, client);
+            }
+        }
+    } catch (e) {
+        console.error('userUpdate tagrol hatası:', e);
+    }
 });
 
 client.on('guildBanAdd', async ban => {
@@ -893,6 +915,12 @@ client.on('guildMemberAdd', async (member) => {
         }
     }
 
+    // Otomatik Tag Rolü (Kullanıcı sunucuya tag ile katıldıysa)
+    try {
+        const { handleMemberTagRole } = require('./commands/tagrol');
+        await handleMemberTagRole(member, client);
+    } catch (e) {}
+
     if (!guildConfig.welcomeChannel) return;
     const channel = member.guild.channels.cache.get(guildConfig.welcomeChannel);
     if (!channel) return;
@@ -1116,6 +1144,54 @@ client.on('interactionCreate', async (interaction) => {
             delete guildConfig.serverStats;
             client.saveConfig();
             return interaction.reply({ content: '✅ Sunucu durum kanalları başarıyla silindi.', flags: MessageFlags.Ephemeral });
+        }
+    }
+
+    // TAGROL BUTONLARI (TARA & SIFIRLA)
+    if (interaction.isButton() && (interaction.customId === 'tagrol_scan_btn' || interaction.customId === 'tagrol_reset_btn')) {
+        if (!interaction.guild) return;
+        if (!client.isModerator(interaction.member)) {
+            return interaction.reply({ content: 'Bu işlemi sadece sunucu yetkilileri yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const guildConfig = client.getGuildConfig(interaction.guild.id);
+        if (!guildConfig.tagRole) {
+            return interaction.reply({ content: '⚠️ Bu sunucuda ayarlanmış bir tag rol sistemi bulunmuyor.', flags: MessageFlags.Ephemeral });
+        }
+
+        if (interaction.customId === 'tagrol_reset_btn') {
+            delete guildConfig.tagRole;
+            client.saveConfig();
+            return interaction.reply({ content: '✅ Tag rol sistemi başarıyla sıfırlandı ve kapatıldı.', flags: MessageFlags.Ephemeral });
+        }
+
+        if (interaction.customId === 'tagrol_scan_btn') {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            try {
+                const { scanGuildMembers } = require('./commands/tagrol');
+                const results = await scanGuildMembers(interaction.guild, client);
+                const role = interaction.guild.roles.cache.get(guildConfig.tagRole.roleId);
+
+                const scanContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent('# 🔄 Tag Tarama ve Dağıtım Tamamlandı!'),
+                        new TextDisplayBuilder().setContent(
+                            `Tüm sunucu üyeleri kontrol edildi ve tag rolleri eşitlendi:\n\n` +
+                            `• **Hedef Tag:** \`${guildConfig.tagRole.tag}\`\n` +
+                            `• **Hedef Rol:** ${role || 'Bilinmiyor'}\n` +
+                            `• **Taranan Üye Sayısı:** \`${results.total}\`\n` +
+                            `• **Tagı Olan Üyeler:** \`${results.tagCount}\`\n` +
+                            `• **Yeni Rol Verilen:** \`+${results.addedCount}\`\n` +
+                            `• **Rolü Geri Alınan:** \`-${results.removedCount}\`\n\n` +
+                            `> *Artık tagı alanlara otomatik rol verilecek, çıkaranlardan ise otomatik geri alınacaktır!*`
+                        )
+                    );
+
+                return interaction.editReply({ components: [scanContainer], flags: MessageFlags.IsComponentsV2 });
+            } catch (err) {
+                console.error('Tagrol scan butonu hatası:', err);
+                return interaction.editReply({ content: `❌ Tarama hatası: ${err.message}` });
+            }
         }
     }
 
@@ -2185,8 +2261,23 @@ client.on('interactionCreate', async (interaction) => {
             });
         }
 
+        const botMember = interaction.guild.members.me;
+        if (!botMember || !botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
+            return interaction.reply({
+                content: `❌ Botun **Rolleri Yönet (Manage Roles)** yetkisi bulunmuyor! Lütfen sunucu yöneticisine bildirin.`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        if (botMember.roles.highest.position <= role.position) {
+            return interaction.reply({
+                content: `❌ Botun en yüksek rolü (${botMember.roles.highest.name}), verilecek ${role.name} rolünün altında!\nLütfen Discord Sunucu Ayarları > Roller kısmından botun rolünü ${role.name} rolünün üzerine taşıyın.`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         try {
-            await interaction.member.roles.add(role);
+            await interaction.member.roles.add(role, 'Doğrulama butonuna tıklandı');
             return interaction.reply({
                 content: `✅ Başarıyla doğrulandın ve ${role} rolün verildi! Sunucumuza hoş geldin! 🎉`,
                 flags: MessageFlags.Ephemeral
@@ -2194,7 +2285,7 @@ client.on('interactionCreate', async (interaction) => {
         } catch (err) {
             console.error('Doğrulama rolü verme hatası:', err);
             return interaction.reply({
-                content: `❌ Rol verilirken bir hata oluştu: Botun rol sırasının (rol hiyerarşisi) verilecek rolden daha üstte olduğundan emin olun.`,
+                content: `❌ Rol verilirken bir hata oluştu: ${err.message}`,
                 flags: MessageFlags.Ephemeral
             });
         }

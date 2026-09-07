@@ -203,59 +203,85 @@ module.exports = {
             });
         }
 
-        // 2. Banner oluştur
-        const bannerBuffer = generateVerifyBanner();
-        const attachment = new AttachmentBuilder(bannerBuffer, { name: 'verify_banner.png' });
+        try {
+            // 2. Banner oluştur
+            const bannerBuffer = generateVerifyBanner();
+            const attachment = new AttachmentBuilder(bannerBuffer, { name: 'verify_banner.png' });
 
-        // 3. Components V2 Container oluştur
-        const container = new ContainerBuilder();
+            // 3. Components V2 Container oluştur
+            const container = new ContainerBuilder()
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent('# 🛡️ Sunucu Doğrulama'),
+                    new TextDisplayBuilder().setContent(
+                        `Sunucumuza hoş geldiniz! Topluluğumuzun güvenliğini sağlamak ve tüm kanallara tam erişim elde etmek için lütfen üyeliğinizi onaylayın.\n\n` +
+                        `${emojis.matter} **Tanımlanacak Rol:** ${role}\n` +
+                        `${emojis.matter} **İşlem:** Aşağıdaki **Doğrula & Sunucuya Katıl** butonuna tıklamanız yeterlidir.\n` +
+                        `${emojis.matter} **Kurallar:** Butona tıkladığınızda sunucu kurallarımızı okumuş ve kabul etmiş sayılırsınız.\n\n` +
+                        `> *Aramıza katılmak ve kuralları onaylamak için butona tıklayın!*`
+                    )
+                );
 
-        // Section (Başlık, Açıklama ve Sunucu İkonu Thumbnail)
-        const section = new SectionBuilder();
-        section.addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('# Sunucu Doğrulama'),
-            new TextDisplayBuilder().setContent(
-                `Sunucumuza hoş geldiniz! Topluluğumuzun güvenliğini sağlamak ve tüm kanallara tam erişim elde etmek için lütfen üyeliğinizi onaylayın.\n\n` +
-                `${emojis.matter} **Tanımlanacak Rol:** ${role}\n` +
-                `${emojis.matter} **İşlem:** Aşağıdaki **Doğrula & Sunucuya Katıl** butonuna tıklamanız yeterlidir.\n` +
-                `${emojis.matter} **Kurallar:** Butona tıkladığınızda sunucu kurallarımızı okumuş ve kabul etmiş sayılırsınız.\n\n` +
-                `> *Aramıza katılmak ve kuralları onaylamak için butona tıklayın!*`
-            )
-        );
+            // Büyük Parlak Yeşil Tik Banner
+            const media = new MediaGalleryBuilder().addItems([
+                { media: { url: 'attachment://verify_banner.png' } }
+            ]);
+            container.addMediaGalleryComponents(media);
 
-        const guildIcon = message.guild.iconURL({ extension: 'png', size: 256 });
-        if (guildIcon && (guildIcon.startsWith('http://') || guildIcon.startsWith('https://'))) {
+            container.addSeparatorComponents(new SeparatorBuilder());
+
+            // Doğrula Butonu
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('verify_member_btn')
+                    .setLabel('Doğrula & Sunucuya Katıl')
+                    .setEmoji('✅')
+                    .setStyle(ButtonStyle.Success)
+            );
+            container.addActionRowComponents(row);
+
+            // Komut mesajını temizle ve paneli gönder
+            await message.delete().catch(() => {});
+
+            return message.channel.send({
+                files: [attachment],
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
+
+        } catch (err) {
+            console.error('Verify paneli oluşturma hatası (Components V2):', err);
             try {
-                section.setThumbnailAccessory(new ThumbnailBuilder().setURL(guildIcon));
-            } catch (_) {}
+                const bannerBuffer = generateVerifyBanner();
+                const attachment = new AttachmentBuilder(bannerBuffer, { name: 'verify_banner.png' });
+                const embed = new EmbedBuilder()
+                    .setColor(0x10B981)
+                    .setTitle('🛡️ Sunucu Doğrulama')
+                    .setDescription(
+                        `Sunucumuza hoş geldiniz! Topluluğumuzun güvenliğini sağlamak ve tüm kanallara tam erişim elde etmek için lütfen üyeliğinizi onaylayın.\n\n` +
+                        `• **Tanımlanacak Rol:** ${role}\n` +
+                        `• **İşlem:** Aşağıdaki butona tıklamanız yeterlidir.\n\n` +
+                        `> *Aramıza katılmak ve kuralları onaylamak için butona tıklayın!*`
+                    )
+                    .setImage('attachment://verify_banner.png');
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('verify_member_btn')
+                        .setLabel('Doğrula & Sunucuya Katıl')
+                        .setEmoji('✅')
+                        .setStyle(ButtonStyle.Success)
+                );
+
+                await message.delete().catch(() => {});
+                return message.channel.send({
+                    files: [attachment],
+                    embeds: [embed],
+                    components: [row]
+                });
+            } catch (fallbackErr) {
+                console.error('Verify fallback hatası:', fallbackErr);
+                return message.reply(`❌ Doğrulama paneli gönderilirken bir hata oluştu: ${err.message}`);
+            }
         }
-        container.addSectionComponents(section);
-
-        // Büyük Parlak Yeşil Tik Banner
-        const media = new MediaGalleryBuilder().addItems([
-            { media: { url: 'attachment://verify_banner.png' }, description: 'Sunucu Doğrulama Banner' }
-        ]);
-        container.addMediaGalleryComponents(media);
-
-        container.addSeparatorComponents(new SeparatorBuilder());
-
-        // Doğrula Butonu (Özel Animasyonlu/Parlak Tik Emojisi ile)
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('verify_member_btn')
-                .setLabel('Doğrula & Sunucuya Katıl')
-                .setEmoji('1545103227865927690')
-                .setStyle(ButtonStyle.Success)
-        );
-        container.addActionRowComponents(row);
-
-        // Komut mesajını temizle ve paneli gönder
-        await message.delete().catch(() => {});
-
-        return message.channel.send({
-            files: [attachment],
-            components: [container],
-            flags: MessageFlags.IsComponentsV2
-        });
     }
 };
