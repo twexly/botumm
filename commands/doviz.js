@@ -3,7 +3,7 @@ const { getFinanceData, buildMarketSummaryContainer } = require('../utils/financ
 
 module.exports = {
     name: 'doviz',
-    aliases: ['döviz', 'kur', 'kurlar', 'dovizkuru', 'piyasa', 'altin', 'altın'],
+    aliases: ['döviz', 'kur', 'kurlar', 'piyasa', 'altin', 'altın', 'altinlar'],
     description: 'Piyasalardaki güncel döviz ve altın kurlarını özet olarak gösterir.',
     async execute(message) {
         try {
@@ -12,7 +12,7 @@ module.exports = {
             return message.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
         } catch (err) {
             console.error('Döviz özet komutu hatası:', err);
-            return message.reply('❌ Piyasa verileri çekilirken bir hata oluştu.');
+            return message.reply('❌ Piyasa verileri çekilirken bir hata oluştu. Lütfen biraz sonra tekrar deneyin.');
         }
     }
 };
