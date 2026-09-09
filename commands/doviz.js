@@ -3,7 +3,7 @@ const { getFinanceData, buildMarketSummaryContainer } = require('../utils/financ
 
 module.exports = {
     name: 'doviz',
-    aliases: ['döviz', 'kurlar', 'piyasa', 'altin', 'altın'],
+    aliases: ['döviz', 'kur', 'kurlar', 'dovizkuru', 'piyasa', 'altin', 'altın'],
     description: 'Piyasalardaki güncel döviz ve altın kurlarını özet olarak gösterir.',
     async execute(message) {
         try {

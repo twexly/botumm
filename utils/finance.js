@@ -29,25 +29,49 @@ async function getFinanceData(force = false) {
         return cachedData;
     }
 
-    const res = await fetch('https://finans.truncgil.com/today.json', {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-    });
+    const endpoints = [
+        'https://finans.truncgil.com/v3/today.json',
+        'https://finans.truncgil.com/today.json'
+    ];
 
-    if (!res.ok) {
-        throw new Error(`Finans API yanıt vermedi (HTTP ${res.status})`);
+    let lastError = null;
+    for (const url of endpoints) {
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                cachedData = data;
+                lastFetchTime = now;
+                return data;
+            }
+        } catch (e) {
+            lastError = e;
+        }
     }
 
-    const data = await res.json();
-    cachedData = data;
-    lastFetchTime = now;
-    return data;
+    throw new Error(`Finans API verisi alınamadı: ${lastError ? lastError.message : 'Bilinmeyen hata'}`);
+}
+
+function extractItemFields(item) {
+    if (!item) return null;
+    const buying = item.Buying || item['Alış'] || item.buying || '-';
+    const selling = item.Selling || item['Satış'] || item.selling || '-';
+    const change = item.Change || item['Değişim'] || item.change || '0';
+    const isNegative = String(change).includes('-');
+    const arrow = isNegative ? '🔻' : '🔺';
+    const trendText = isNegative ? 'Düşüşte' : 'Yükselişte';
+    return { buying, selling, change, isNegative, arrow, trendText };
 }
 
 function buildFinanceContainer({ title, code, emoji, key, data }) {
     const item = data[key];
-    if (!item) {
+    const fields = extractItemFields(item);
+    if (!fields) {
         return new ContainerBuilder()
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(`# ❌ ${emoji} ${title}`),
@@ -55,19 +79,14 @@ function buildFinanceContainer({ title, code, emoji, key, data }) {
             );
     }
 
-    const changeRaw = item['Değişim'] || '0';
-    const isNegative = changeRaw.includes('-');
-    const arrow = isNegative ? '🔻' : '🔺';
-    const trendText = isNegative ? 'Düşüşte' : 'Yükselişte';
-
     const container = new ContainerBuilder()
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`# ${emoji} ${title} (${code})`),
             new TextDisplayBuilder().setContent(
                 `> *Piyasalardan anlık olarak alınan canlı kur/fiyat bilgisi:*\n\n` +
-                `• **📥 Alış Fiyatı:** \`${item['Alış']} ₺\`\n` +
-                `• **📤 Satış Fiyatı:** \`${item['Satış']} ₺\`\n` +
-                `• **📊 24s Değişim:** \`${item['Değişim']}\` ${arrow} (${trendText})\n` +
+                `• **📥 Alış Fiyatı:** \`${fields.buying} ₺\`\n` +
+                `• **📤 Satış Fiyatı:** \`${fields.selling} ₺\`\n` +
+                `• **📊 24s Değişim:** \`${fields.change}\` ${fields.arrow} (${fields.trendText})\n` +
                 `• **🕒 Son Güncelleme:** \`${data.Update_Date || 'Canlı'}\``
             )
         )
@@ -88,9 +107,9 @@ function buildFinanceContainer({ title, code, emoji, key, data }) {
 function buildMarketSummaryContainer(data) {
     const formatLine = (name, key, emoji) => {
         const item = data[key];
-        if (!item) return `• ${emoji} **${name}:** Bilgi alınamadı`;
-        const arrow = item['Değişim']?.includes('-') ? '🔻' : '🔺';
-        return `• ${emoji} **${name}:** \`${item['Alış']} ₺\` / \`${item['Satış']} ₺\` (\`${item['Değişim']}\` ${arrow})`;
+        const fields = extractItemFields(item);
+        if (!fields) return `• ${emoji} **${name}:** Bilgi alınamadı`;
+        return `• ${emoji} **${name}:** \`${fields.buying} ₺\` / \`${fields.selling} ₺\` (\`${fields.change}\` ${fields.arrow})`;
     };
 
     const container = new ContainerBuilder()
@@ -132,26 +151,24 @@ function buildMarketSummaryContainer(data) {
 
 function buildFinanceEmbed({ title, code, emoji, key, data }) {
     const item = data[key];
-    if (!item) {
+    const fields = extractItemFields(item);
+    if (!fields) {
         return new EmbedBuilder()
             .setColor(0xE74C3C)
             .setTitle(`${emoji} ${title}`)
             .setDescription('Bu finans verisi şu anda piyasadan alınamadı.');
     }
 
-    const changeRaw = item['Değişim'] || '0';
-    const isNegative = changeRaw.includes('-');
-    const color = isNegative ? 0xE74C3C : 0x2ECC71;
-    const arrow = isNegative ? '🔻' : '🔺';
+    const color = fields.isNegative ? 0xE74C3C : 0x2ECC71;
 
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTitle(`${emoji} ${title} (${code})`)
         .setDescription(`> *Piyasalardan anlık olarak alınan canlı kur/fiyat bilgisi:*`)
         .addFields(
-            { name: '📥 Alış Fiyatı', value: `\`${item['Alış']} ₺\``, inline: true },
-            { name: '📤 Satış Fiyatı', value: `\`${item['Satış']} ₺\``, inline: true },
-            { name: '📊 24s Değişim', value: `\`${item['Değişim']}\` ${arrow}`, inline: true }
+            { name: '📥 Alış Fiyatı', value: `\`${fields.buying} ₺\``, inline: true },
+            { name: '📤 Satış Fiyatı', value: `\`${fields.selling} ₺\``, inline: true },
+            { name: '📊 24s Değişim', value: `\`${fields.change}\` ${fields.arrow} (${fields.trendText})`, inline: true }
         )
         .setFooter({ text: `Piyasa Verisi: Trunçgil Finans • Güncelleme: ${data.Update_Date || 'Canlı'}` })
         .setTimestamp();
