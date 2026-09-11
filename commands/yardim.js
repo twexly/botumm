@@ -242,7 +242,7 @@ module.exports = {
                     `• **\`.zenginler\`** : Sunucunun en zengin 10 üyesini listeler`
                 ),
                 new TextDisplayBuilder().setContent(
-                    `### ⚽ Süper Lig & Futbol\n` +
+                    `### ${emojis.superlig} Süper Lig & Futbol\n` +
                     `• **\`.superlig\`** : Süper Lig takım rollerini oluşturur ve seçim menüsünü gönderir\n` +
                     `• **\`.puandurumu\`** : FlashScore üzerinden canlı Süper Lig puan durumu tablosunu çeker`
                 )

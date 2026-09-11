@@ -10,6 +10,7 @@ module.exports = {
     cross: '<:cross:1545103202616090724>',          // Hata / Çarpı
     developer: '<:developer:1545103173029724310>',  // Developer / Geliştirici
     hello: '<a:hello:1541362303797301318>',         // Hoş geldin / Selam
+    superlig: '<:superlig:1548051464310755460>',    // Süper Lig logosu
 
     // Takım Emojileri
     teams: {

@@ -52,7 +52,7 @@ module.exports = {
         // 2. Components V2 Container
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent('# ⚽ Süper Lig Takım Seçim Paneli'),
+                new TextDisplayBuilder().setContent(`# ${emojis.superlig} Süper Lig Takım Seçim Paneli`),
                 new TextDisplayBuilder().setContent(
                     `Aşağıdaki açılır menüyü kullanarak tuttuğun takımı seçebilir ve sunucudaki takım rolünü anında alabilirsin!\n\n` +
                     `${emojis.matter} **Nasıl Çalışır?**\n` +
@@ -75,7 +75,7 @@ module.exports = {
             console.error("Components V2 gönderme hatası, klasik ActionRow deneniyor:", err);
             try {
                 await message.channel.send({
-                    content: `# ⚽ Süper Lig Takım Seçim Paneli\n\n` +
+                    content: `# ${emojis.superlig} Süper Lig Takım Seçim Paneli\n\n` +
                         `Aşağıdaki açılır menüyü kullanarak tuttuğun takımı seçebilir ve sunucudaki takım rolünü anında alabilirsin!\n\n` +
                         `${emojis.matter} **Nasıl Çalışır?**\n` +
                         `• Menüden takımını seçtiğinde bot otomatik olarak takım rolünü verir.\n` +
@@ -97,7 +97,7 @@ module.exports = {
                     .addOptions(plainOptions);
                 const plainRow = new ActionRowBuilder().addComponents(plainMenu);
                 await message.channel.send({
-                    content: `# ⚽ Süper Lig Takım Seçim Paneli\n\n` +
+                    content: `# ${emojis.superlig} Süper Lig Takım Seçim Paneli\n\n` +
                         `Aşağıdaki açılır menüyü kullanarak tuttuğun takımı seçebilir ve sunucudaki takım rolünü anında alabilirsin!\n\n` +
                         `• Menüden takımını seçtiğinde bot otomatik olarak takım rolünü verir.\n` +
                         `• Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.\n` +

@@ -244,7 +244,7 @@ module.exports = {
 
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('# 🏆 Trendyol Süper Lig — Canlı Puan Durumu'),
+                    new TextDisplayBuilder().setContent(`# ${emojis.superlig} Trendyol Süper Lig — Canlı Puan Durumu`),
                     new TextDisplayBuilder().setContent(
                         `FlashScore verileriyle anlık olarak çekilen resmi lig sıralaması:\n\n` +
                         `${emojis.matter} **Kaynak:** [FlashScore Süper Lig](https://www.flashscore.com/football/turkey/super-lig/standings/2TRNmxYR/standings/overall/)\n` +

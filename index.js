@@ -2327,7 +2327,7 @@ client.on('interactionCreate', async (interaction) => {
 
             const confirmContainer = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent('# ⚽ Takımın Başarıyla Ayarlandı!'),
+                    new TextDisplayBuilder().setContent(`# ${emojis.superlig} Takımın Başarıyla Ayarlandı!`),
                     new TextDisplayBuilder().setContent(
                         `Tebrikler ${interaction.user}!\n\n` +
                         `• **Seçilen Takım:** ${selectedTeam.emoji} **${selectedTeam.name}**\n` +
