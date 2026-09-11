@@ -21,6 +21,7 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
+    StringSelectMenuBuilder,
     UserSelectMenuBuilder,
     RoleSelectMenuBuilder,
     ActivityType
