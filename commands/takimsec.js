@@ -126,15 +126,21 @@ module.exports = {
 
                 let createdCount = 0;
                 for (const team of ALL_TEAMS) {
-                    const exists = guildRoles.some(r => r.name.toLowerCase() === team.name.toLowerCase());
-                    if (!exists) {
+                    const existingRole = guildRoles.find(r => r.name.toLowerCase() === team.name.toLowerCase());
+                    if (!existingRole) {
                         await message.guild.roles.create({
                             name: team.name,
                             color: team.color,
+                            permissions: [], // Hiçbir yetki yok (Sıfır yetki)
+                            hoist: false,
+                            mentionable: false,
                             reason: 'Avrupa ve Süper Lig Takım Rol Sistemi'
                         }).catch(() => {});
                         createdCount++;
                         await new Promise(res => setTimeout(res, 1200)); // Discord rate-limit koruması
+                    } else if (existingRole.permissions.bitfield !== 0n) {
+                        // Eğer rolde önceden kalma herhangi bir yetki varsa temizle
+                        await existingRole.setPermissions([], 'Takım rolü yetkileri sıfırlandı').catch(() => {});
                     }
                 }
 

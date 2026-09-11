@@ -2362,8 +2362,13 @@ client.on('interactionCreate', async (interaction) => {
                 targetRole = await interaction.guild.roles.create({
                     name: selectedTeam.name,
                     color: selectedTeam.color,
+                    permissions: [], // Sıfır yetki (Hiçbir yetki yok)
+                    hoist: false,
+                    mentionable: false,
                     reason: `${selectedTeam.leagueName || 'Futbol'} Takım Seçimi`
                 });
+            } else if (targetRole.permissions.bitfield !== 0n) {
+                await targetRole.setPermissions([], 'Takım rolü yetkileri sıfırlandı').catch(() => {});
             }
 
             await interaction.member.roles.add(targetRole);
