@@ -67,6 +67,7 @@ function fetchFlashscoreFeed(feedCode) {
                         });
 
                         teams.push({
+                            id: map['TI'],
                             rank: map['TR'],
                             name: map['TN'],
                             played: map['TM'] || '0',
@@ -88,6 +89,118 @@ function fetchFlashscoreFeed(feedCode) {
     });
 }
 
+function fetchFlashscoreFormFeed(formCode) {
+    return new Promise((resolve) => {
+        const url = 'https://2.flashscore.ninja/2/x/feed/' + formCode;
+        https.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'x-fsign': 'SW9D1eZo'
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try {
+                    const blocks = data.split('~');
+                    const formMap = {};
+                    let currentId = null;
+                    let currentName = null;
+
+                    for (const b of blocks) {
+                        if (b.startsWith('TR÷')) {
+                            const parts = b.split('¬');
+                            for (const p of parts) {
+                                if (p.startsWith('TI÷')) currentId = p.replace('TI÷', '');
+                                if (p.startsWith('TN÷')) currentName = p.replace('TN÷', '');
+                            }
+                            if (currentId) formMap[currentId] = [];
+                            if (currentName) formMap[currentName] = [];
+                        } else if (b.startsWith('LMS÷')) {
+                            const parts = b.split('¬');
+                            let outcome = null;
+                            for (const p of parts) {
+                                if (p.startsWith('LMU÷')) outcome = p.replace('LMU÷', '');
+                            }
+                            if (outcome && ['w', 'd', 'l'].includes(outcome)) {
+                                if (currentId && formMap[currentId].length < 5) formMap[currentId].push(outcome);
+                                if (currentName && formMap[currentName].length < 5) formMap[currentName].push(outcome);
+                            }
+                        }
+                    }
+
+                    // Feed ters kronolojik verir (en yeni maç başta).
+                    // Tabloda soldan sağa kronolojik akış için tersine çeviriyoruz (en son maç sağda).
+                    for (const k of Object.keys(formMap)) {
+                        formMap[k].reverse();
+                    }
+
+                    resolve(formMap);
+                } catch (e) {
+                    resolve({});
+                }
+            });
+        }).on('error', () => resolve({}));
+    });
+}
+
+function drawFormBadge(ctx, cx, cy, radius, outcome) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+
+    if (outcome === 'w') {
+        // Galibiyet: Yeşil daire + beyaz tik
+        ctx.fillStyle = '#10B981';
+        ctx.fill();
+
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - radius * 0.45, cy);
+        ctx.lineTo(cx - radius * 0.1, cy + radius * 0.38);
+        ctx.lineTo(cx + radius * 0.45, cy - radius * 0.35);
+        ctx.stroke();
+
+    } else if (outcome === 'l') {
+        // Mağlubiyet: Kırmızı daire + beyaz çarpı
+        ctx.fillStyle = '#EF4444';
+        ctx.fill();
+
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const off = radius * 0.36;
+        ctx.moveTo(cx - off, cy - off);
+        ctx.lineTo(cx + off, cy + off);
+        ctx.moveTo(cx + off, cy - off);
+        ctx.lineTo(cx - off, cy + off);
+        ctx.stroke();
+
+    } else if (outcome === 'd') {
+        // Beraberlik: Direkt gri daire + beyaz çizgi
+        ctx.fillStyle = '#64748B';
+        ctx.fill();
+
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - radius * 0.36, cy);
+        ctx.lineTo(cx + radius * 0.36, cy);
+        ctx.stroke();
+    } else {
+        // Boş / Henüz oynanmamış maç slotu
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
 async function generateStandingsImage(tournament) {
     const now = Date.now();
     const cached = standingsCache.get(tournament.id);
@@ -95,12 +208,19 @@ async function generateStandingsImage(tournament) {
         return cached.buffer;
     }
 
-    const teams = await fetchFlashscoreFeed(tournament.feedCode);
+    const baseCode = tournament.feedCode.replace(/_\d+$/, '');
+    const formCode = baseCode + '_5';
+
+    const [teams, formMap] = await Promise.all([
+        fetchFlashscoreFeed(tournament.feedCode),
+        fetchFlashscoreFormFeed(formCode).catch(() => ({}))
+    ]);
+
     if (!teams || teams.length === 0) {
         throw new Error(`${tournament.name} puan durumu verisi alınamadı.`);
     }
 
-    const width = 960;
+    const width = 1200;
     const rowHeight = 44;
     const headerHeight = 130;
     const height = headerHeight + (teams.length * rowHeight) + 40;
@@ -127,11 +247,11 @@ async function generateStandingsImage(tournament) {
     ctx.font = 'bold 26px "Poppins", "Segoe UI", sans-serif';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'left';
-    ctx.fillText(`${tournament.flag} ${tournament.name.toUpperCase()}`, 40, 52);
+    ctx.fillText(tournament.name.toUpperCase(), 40, 52);
 
     ctx.font = '14px "Poppins", "Segoe UI", sans-serif';
     ctx.fillStyle = '#94A3B8';
-    ctx.fillText(`Resmi Canlı Puan Durumu Tablosu • FlashScore Veri Akışı • ${tournament.shortName}`, 40, 78);
+    ctx.fillText(`Resmi Canlı Puan Durumu Tablosu • FlashScore Veri Akışı • ${tournament.shortName || tournament.name}`, 40, 78);
 
     // 4. Tablo Sütun Başlıkları Çubuğu
     const barY = 95;
@@ -148,14 +268,18 @@ async function generateStandingsImage(tournament) {
     ctx.fillText('TAKIM', 110, barY + 21);
 
     ctx.textAlign = 'center';
-    ctx.fillText('OM', 520, barY + 21);
-    ctx.fillText('G', 575, barY + 21);
-    ctx.fillText('B', 630, barY + 21);
-    ctx.fillText('M', 685, barY + 21);
-    ctx.fillText('AV', 745, barY + 21);
+    ctx.fillText('OM', 510, barY + 21);
+    ctx.fillText('G', 560, barY + 21);
+    ctx.fillText('B', 610, barY + 21);
+    ctx.fillText('M', 660, barY + 21);
+    ctx.fillText('AV', 715, barY + 21);
 
     ctx.fillStyle = '#F59E0B';
-    ctx.fillText('PUAN', 840, barY + 21);
+    ctx.fillText('PUAN', 775, barY + 21);
+
+    ctx.fillStyle = '#64748B';
+    ctx.fillText('SON 5 MAÇ (FORM)', 915, barY + 21);
+    ctx.fillText('DURUM', 1090, barY + 21);
 
     // 5. Takım Satırları
     for (let i = 0; i < teams.length; i++) {
@@ -232,20 +356,54 @@ async function generateStandingsImage(tournament) {
         ctx.font = '14px "Poppins", "Segoe UI", sans-serif';
         ctx.fillStyle = '#CBD5E1';
         ctx.textAlign = 'center';
-        ctx.fillText(t.played, 520, y + 19);
-        ctx.fillText(t.wins, 575, y + 19);
-        ctx.fillText(t.draws, 630, y + 19);
-        ctx.fillText(t.losses, 685, y + 19);
+        ctx.fillText(t.played, 510, y + 19);
+        ctx.fillText(t.wins, 560, y + 19);
+        ctx.fillText(t.draws, 610, y + 19);
+        ctx.fillText(t.losses, 660, y + 19);
 
         // Averaj
         const diffNum = parseInt(t.diff, 10);
         ctx.fillStyle = diffNum > 0 ? '#10B981' : diffNum < 0 ? '#EF4444' : '#94A3B8';
-        ctx.fillText(diffNum > 0 ? `+${t.diff}` : t.diff, 745, y + 19);
+        ctx.fillText(diffNum > 0 ? `+${t.diff}` : t.diff, 715, y + 19);
 
         // Puan
         ctx.font = 'bold 16px "Poppins", "Segoe UI", sans-serif';
         ctx.fillStyle = '#F59E0B';
-        ctx.fillText(t.points, 840, y + 19);
+        ctx.fillText(t.points, 775, y + 19);
+
+        // Son 5 Maç (Form Badges)
+        const teamForm = (formMap && (formMap[t.id] || formMap[t.name])) || [];
+        const badgeRadius = 11;
+        const badgeSpacing = 28;
+        const startX = 915 - ((5 - 1) * badgeSpacing) / 2;
+
+        for (let m = 0; m < 5; m++) {
+            const bx = startX + m * badgeSpacing;
+            const by = y + 14;
+            const outcome = teamForm[m] || null;
+            drawFormBadge(ctx, bx, by, badgeRadius, outcome);
+        }
+
+        // Form Özeti Yazısı (Son 5 maçtan kaç galibiyet, beraberlik, mağlubiyet)
+        if (teamForm.length > 0) {
+            const wCount = teamForm.filter(x => x === 'w').length;
+            const dCount = teamForm.filter(x => x === 'd').length;
+            const lCount = teamForm.filter(x => x === 'l').length;
+            let summaryStr = [];
+            if (wCount > 0) summaryStr.push(`${wCount}G`);
+            if (dCount > 0) summaryStr.push(`${dCount}B`);
+            if (lCount > 0) summaryStr.push(`${lCount}M`);
+
+            ctx.font = 'bold 12px "Poppins", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#94A3B8';
+            ctx.textAlign = 'center';
+            ctx.fillText(summaryStr.length > 0 ? summaryStr.join(' ') : '-', 1090, y + 19);
+        } else {
+            ctx.font = '13px "Poppins", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#64748B';
+            ctx.textAlign = 'center';
+            ctx.fillText('-', 1090, y + 19);
+        }
     }
 
     const buffer = canvas.toBuffer('image/png');
