@@ -2298,7 +2298,7 @@ client.on('interactionCreate', async (interaction) => {
         const superligCmd = client.commands.get('superlig');
         const teams = superligCmd?.SUPER_LIG_TEAMS || [];
 
-        const selectedTeam = teams.find(t => `sl_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '')}` === selectedValue);
+        const selectedTeam = teams.find(t => (t.id && t.id === selectedValue) || `sl_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '')}` === selectedValue);
         if (!selectedTeam) {
             return interaction.reply({ content: 'Seçilen takım bulunamadı.', flags: MessageFlags.Ephemeral });
         }

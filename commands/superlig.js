@@ -2,25 +2,21 @@ const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, ActionRowBuilder
 const emojis = require('../emojis');
 
 const SUPER_LIG_TEAMS = [
-    { name: 'Galatasaray', color: '#A90432', emoji: '🦁', desc: 'Sarı Kırmızı • Cimbom' },
-    { name: 'Fenerbahçe', color: '#002366', emoji: '🟡', desc: 'Sarı Lacivert • Sarı Kanarya' },
-    { name: 'Beşiktaş', color: '#111111', emoji: '🦅', desc: 'Siyah Beyaz • Kara Kartal' },
-    { name: 'Trabzonspor', color: '#8B0000', emoji: '🌊', desc: 'Bordo Mavi • Karadeniz Fırtınası' },
-    { name: 'Başakşehir', color: '#FF7518', emoji: '🦉', desc: 'Turuncu Lacivert • Boz Baykuşlar' },
-    { name: 'Samsunspor', color: '#E30A17', emoji: '🔴', desc: 'Kırmızı Beyaz Siyah • Kırmızı Şimşekler' },
-    { name: 'Eyüpspor', color: '#4B0082', emoji: '🟣', desc: 'Eflatun Sarı • Eflatunlar' },
-    { name: 'Göztepe', color: '#FFD700', emoji: '⚓', desc: 'Sarı Kırmızı • Göz Göz' },
-    { name: 'Sivasspor', color: '#C8102E', emoji: '🔴', desc: 'Kırmızı Beyaz • Yiğidolar' },
-    { name: 'Kasımpaşa', color: '#003399', emoji: '🔵', desc: 'Lacivert Beyaz • Paşa' },
-    { name: 'Antalyaspor', color: '#E30A17', emoji: '🦂', desc: 'Kırmızı Beyaz • Akrepler' },
-    { name: 'Çaykur Rizespor', color: '#006633', emoji: '🟢', desc: 'Yeşil Mavi • Atmacalar' },
-    { name: 'Gaziantep FK', color: '#A50021', emoji: '🦅', desc: 'Kırmızı Siyah • Şahinler' },
-    { name: 'Konyaspor', color: '#008000', emoji: '🦅', desc: 'Yeşil Beyaz • Anadolu Kartalı' },
-    { name: 'Alanyaspor', color: '#FF8C00', emoji: '🟠', desc: 'Turuncu Yeşil • Şimşekler' },
-    { name: 'Bodrum FK', color: '#00A859', emoji: '⛵', desc: 'Yeşil Beyaz' },
-    { name: 'Kayserispor', color: '#FFD700', emoji: '⭐', desc: 'Sarı Kırmızı • Anadolu Yıldızı' },
-    { name: 'Hatayspor', color: '#800020', emoji: '🌟', desc: 'Bordo Beyaz • Güneyin Yıldızı' },
-    { name: 'Adana Demirspor', color: '#0080FF', emoji: '⚡', desc: 'Mavi Lacivert • Mavi Şimşekler' }
+    { id: 'sl_galatasaray', name: 'Galatasaray', color: '#A90432', emoji: '<:galatasaray:1548047618049843331>', desc: 'Sarı Kırmızı • Cimbom' },
+    { id: 'sl_fenerbahce', name: 'Fenerbahçe', color: '#002366', emoji: '<:fenerbahce:1548047920329396244>', desc: 'Sarı Lacivert • Sarı Kanarya' },
+    { id: 'sl_besiktas', name: 'Beşiktaş', color: '#111111', emoji: '<:besiktas:1548047466623139860>', desc: 'Siyah Beyaz • Kara Kartal' },
+    { id: 'sl_trabzonspor', name: 'Trabzonspor', color: '#8B0000', emoji: '<:trabzonspor:1548046641024602192>', desc: 'Bordo Mavi • Karadeniz Fırtınası' },
+    { id: 'sl_basaksehir', name: 'Başakşehir', color: '#FF7518', emoji: '<:basaksehir:1548047417834995742>', desc: 'Turuncu Lacivert • Boz Baykuşlar' },
+    { id: 'sl_samsunspor', name: 'Samsunspor', color: '#E30A17', emoji: '<:samsunspor:1548047336154865776>', desc: 'Kırmızı Beyaz Siyah • Şimşekler' },
+    { id: 'sl_goztepe', name: 'Göztepe', color: '#FFD700', emoji: '<:goztepe:1548047700358996019>', desc: 'Sarı Kırmızı • Göz Göz' },
+    { id: 'sl_kasimpasa', name: 'Kasımpaşa', color: '#003399', emoji: '<:kasimpasa:1548047669119815771>', desc: 'Lacivert Beyaz • Paşa' },
+    { id: 'sl_caykurrizespor', name: 'Çaykur Rizespor', color: '#006633', emoji: '<:caykurrizespor:1548047499971919924>', desc: 'Yeşil Mavi • Atmacalar' },
+    { id: 'sl_alanyaspor', name: 'Alanyaspor', color: '#FF8C00', emoji: '<:alanyaspor:1548047391146377287>', desc: 'Turuncu Yeşil • Şimşekler' },
+    { id: 'sl_kocaelispor', name: 'Kocaelispor', color: '#006400', emoji: '<:kocaelispor:1548047864293228564>', desc: 'Yeşil Siyah • Körfez' },
+    { id: 'sl_erzurumspor', name: 'Erzurumspor', color: '#003399', emoji: '<:erzurumspor:1548047798572945499>', desc: 'Mavi Beyaz • Dadaşlar' },
+    { id: 'sl_genclerbirligi', name: 'Gençlerbirliği', color: '#C8102E', emoji: '<:genclerbirligi:1548047755983855626>', desc: 'Kırmızı Kara • Alkaralar' },
+    { id: 'sl_amedspor', name: 'Amedspor', color: '#008000', emoji: '<:amedspor:1548047728641056858>', desc: 'Yeşil Kırmızı Beyaz' },
+    { id: 'sl_corumfk', name: 'Çorum FK', color: '#8B0000', emoji: '<:corumfk:1548047588467408896>', desc: 'Kırmızı Siyah' }
 ];
 
 module.exports = {
@@ -62,7 +58,7 @@ module.exports = {
         // 2. Select Menu Seçeneklerini Oluştur
         const options = SUPER_LIG_TEAMS.map(team => ({
             label: team.name,
-            value: `sl_${team.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+            value: team.id || `sl_${team.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
             description: team.desc,
             emoji: team.emoji
         }));
