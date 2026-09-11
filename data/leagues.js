@@ -196,8 +196,8 @@ const TOURNAMENTS = {
         name: 'UEFA Champions League',
         shortName: 'Şampiyonlar Ligi',
         feedCode: 'to_tfRdlhP9_vT1iNRGq_1',
-        emoji: '⭐',
-        flag: '🇪🇺',
+        emoji: emojis.matter,
+        flag: '',
         topRankType: 'euro',
         url: 'https://www.flashscore.com/football/europe/champions-league/standings/'
     },
@@ -206,8 +206,8 @@ const TOURNAMENTS = {
         name: 'UEFA Europa League',
         shortName: 'Avrupa Ligi',
         feedCode: 'to_nTFvUo9N_OjQOTQKa_1',
-        emoji: '🏆',
-        flag: '🇪🇺',
+        emoji: emojis.matter,
+        flag: '',
         topRankType: 'euro',
         url: 'https://www.flashscore.com/football/europe/europa-league/standings/'
     },
@@ -216,8 +216,8 @@ const TOURNAMENTS = {
         name: 'UEFA Conference League',
         shortName: 'Konferans Ligi',
         feedCode: 'to_zcdxsAHq_8WHkz50k_1',
-        emoji: '🏅',
-        flag: '🇪🇺',
+        emoji: emojis.matter,
+        flag: '',
         topRankType: 'euro',
         url: 'https://www.flashscore.com/football/europe/conference-league/standings/'
     }

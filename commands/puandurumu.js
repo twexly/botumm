@@ -287,17 +287,14 @@ function createStandingsButtons(activeId) {
         new ButtonBuilder()
             .setCustomId('puandurumu_lig_championsleague')
             .setLabel('Şampiyonlar Ligi')
-            .setEmoji('⭐')
             .setStyle(activeId === 'championsleague' ? ButtonStyle.Success : ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId('puandurumu_lig_europaleague')
             .setLabel('Avrupa Ligi')
-            .setEmoji('🏆')
             .setStyle(activeId === 'europaleague' ? ButtonStyle.Success : ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId('puandurumu_lig_conferenceleague')
             .setLabel('Konferans Ligi')
-            .setEmoji('🏅')
             .setStyle(activeId === 'conferenceleague' ? ButtonStyle.Success : ButtonStyle.Secondary)
     );
 

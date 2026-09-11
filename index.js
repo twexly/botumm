@@ -2312,7 +2312,7 @@ client.on('interactionCreate', async (interaction) => {
 
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId(`takimsec_menu_${league.id}`)
-            .setPlaceholder(`⚽ Desteklediğin ${league.name} takımını seç...`)
+            .setPlaceholder(`Desteklediğin ${league.name} takımını seç...`)
             .addOptions(options);
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -2322,8 +2322,8 @@ client.on('interactionCreate', async (interaction) => {
                 new TextDisplayBuilder().setContent(`# ${league.emoji} ${league.name} Takım Seçim Paneli`),
                 new TextDisplayBuilder().setContent(
                     `Aşağıdaki açılır menüyü kullanarak **${league.name}** liginden desteklediğin takımı seçebilir ve sunucudaki rolünü anında alabilirsin!\n\n` +
-                    `• Menüden seçim yaptığında rolün otomatik tanımlanır.\n` +
-                    `• Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.`
+                    `${emojis.matter} Menüden seçim yaptığında rolün otomatik tanımlanır.\n` +
+                    `${emojis.matter} Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.`
                 )
             )
             .addSeparatorComponents(new SeparatorBuilder())
@@ -2375,13 +2375,13 @@ client.on('interactionCreate', async (interaction) => {
 
             const confirmContainer = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`# ${selectedTeam.leagueEmoji || '⚽'} Takımın Başarıyla Ayarlandı!`),
+                    new TextDisplayBuilder().setContent(`# ${selectedTeam.leagueEmoji} Takımın Başarıyla Ayarlandı!`),
                     new TextDisplayBuilder().setContent(
                         `Tebrikler ${interaction.user}!\n\n` +
-                        `• **Lig:** ${selectedTeam.leagueEmoji || '⚽'} **${selectedTeam.leagueName || 'Lig'}**\n` +
-                        `• **Seçilen Takım:** ${selectedTeam.emoji} **${selectedTeam.name}**\n` +
-                        `• **Verilen Rol:** ${targetRole}\n` +
-                        `• *${selectedTeam.desc}*\n\n` +
+                        `${emojis.matter} **Lig:** ${selectedTeam.leagueEmoji} **${selectedTeam.leagueName || 'Lig'}**\n` +
+                        `${emojis.matter} **Seçilen Takım:** ${selectedTeam.emoji} **${selectedTeam.name}**\n` +
+                        `${emojis.matter} **Verilen Rol:** ${targetRole}\n` +
+                        `${emojis.matter} *${selectedTeam.desc}*\n\n` +
                         `> *Tribündeki yerin ayrıldı, renklerinle sunucuda parlamaya hazırsın!*`
                     )
                 );
