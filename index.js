@@ -2291,14 +2291,56 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // --- SÜPER LİG TAKIM SEÇİMİ ---
-    if (interaction.isStringSelectMenu() && interaction.customId === 'superlig_takim_sec') {
+    // --- LİG SEÇİMİ BUTONLARI (EPHEMERAL GİZLİ PANEL) ---
+    if (interaction.isButton() && interaction.customId.startsWith('takimsec_btn_')) {
+        if (!interaction.guild) return;
+        const leagueKey = interaction.customId.replace('takimsec_btn_', '');
+        const { LEAGUES } = require('./data/leagues');
+        const league = LEAGUES[leagueKey];
+
+        if (!league) {
+            return interaction.reply({ content: 'Belirtilen lig bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        const options = league.teams.map(team => ({
+            label: team.name,
+            value: team.id,
+            description: team.desc,
+            emoji: team.emoji
+        }));
+
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`takimsec_menu_${league.id}`)
+            .setPlaceholder(`⚽ Desteklediğin ${league.name} takımını seç...`)
+            .addOptions(options);
+
+        const row = new ActionRowBuilder().addComponents(selectMenu);
+
+        const leagueContainer = new ContainerBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent(`# ${league.emoji} ${league.name} Takım Seçim Paneli`),
+                new TextDisplayBuilder().setContent(
+                    `Aşağıdaki açılır menüyü kullanarak **${league.name}** liginden desteklediğin takımı seçebilir ve sunucudaki rolünü anında alabilirsin!\n\n` +
+                    `• Menüden seçim yaptığında rolün otomatik tanımlanır.\n` +
+                    `• Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.`
+                )
+            )
+            .addSeparatorComponents(new SeparatorBuilder())
+            .addActionRowComponents(row);
+
+        return interaction.reply({
+            components: [leagueContainer],
+            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2
+        });
+    }
+
+    // --- TAKIM SEÇİMİ İŞLEMİ (TÜM LİGLER) ---
+    if (interaction.isStringSelectMenu() && (interaction.customId.startsWith('takimsec_menu_') || interaction.customId === 'superlig_takim_sec')) {
         if (!interaction.guild) return;
         const selectedValue = interaction.values[0];
-        const superligCmd = client.commands.get('superlig');
-        const teams = superligCmd?.SUPER_LIG_TEAMS || [];
+        const { findTeam, ALL_TEAMS } = require('./data/leagues');
+        const selectedTeam = findTeam(selectedValue);
 
-        const selectedTeam = teams.find(t => (t.id && t.id === selectedValue) || `sl_${t.name.toLowerCase().replace(/[^a-z0-9]/g, '')}` === selectedValue);
         if (!selectedTeam) {
             return interaction.reply({ content: 'Seçilen takım bulunamadı.', flags: MessageFlags.Ephemeral });
         }
@@ -2307,8 +2349,8 @@ client.on('interactionCreate', async (interaction) => {
 
         try {
             await interaction.guild.roles.fetch().catch(() => {});
-            const teamNames = new Set(teams.map(t => t.name.toLowerCase()));
-            const currentRoles = interaction.member.roles.cache.filter(r => teamNames.has(r.name.toLowerCase()));
+            const allTeamNames = new Set(ALL_TEAMS.map(t => t.name.toLowerCase()));
+            const currentRoles = interaction.member.roles.cache.filter(r => allTeamNames.has(r.name.toLowerCase()));
 
             for (const r of currentRoles.values()) {
                 await interaction.member.roles.remove(r).catch(() => {});
@@ -2319,7 +2361,7 @@ client.on('interactionCreate', async (interaction) => {
                 targetRole = await interaction.guild.roles.create({
                     name: selectedTeam.name,
                     color: selectedTeam.color,
-                    reason: 'Süper Lig Takım Seçimi'
+                    reason: `${selectedTeam.leagueName || 'Futbol'} Takım Seçimi`
                 });
             }
 
@@ -2327,9 +2369,10 @@ client.on('interactionCreate', async (interaction) => {
 
             const confirmContainer = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`# ${emojis.superlig} Takımın Başarıyla Ayarlandı!`),
+                    new TextDisplayBuilder().setContent(`# ${selectedTeam.leagueEmoji || '⚽'} Takımın Başarıyla Ayarlandı!`),
                     new TextDisplayBuilder().setContent(
                         `Tebrikler ${interaction.user}!\n\n` +
+                        `• **Lig:** ${selectedTeam.leagueEmoji || '⚽'} **${selectedTeam.leagueName || 'Lig'}**\n` +
                         `• **Seçilen Takım:** ${selectedTeam.emoji} **${selectedTeam.name}**\n` +
                         `• **Verilen Rol:** ${targetRole}\n` +
                         `• *${selectedTeam.desc}*\n\n` +
@@ -2342,10 +2385,58 @@ client.on('interactionCreate', async (interaction) => {
                 flags: MessageFlags.IsComponentsV2
             });
         } catch (err) {
-            console.error('Süper Lig rol verme hatası:', err);
+            console.error('Takım rol verme hatası:', err);
             return interaction.editReply({
                 content: `Rol verilirken bir hata oluştu: ${err.message}`
             });
+        }
+    }
+
+    // --- PUAN DURUMU LİG DEĞİŞTİRME BUTONLARI ---
+    if (interaction.isButton() && interaction.customId.startsWith('puandurumu_lig_')) {
+        const tournamentKey = interaction.customId.replace('puandurumu_lig_', '');
+        const { TOURNAMENTS } = require('./data/leagues');
+        const tournament = TOURNAMENTS[tournamentKey];
+
+        if (!tournament) {
+            return interaction.reply({ content: 'Belirtilen lig bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.deferUpdate().catch(() => {});
+
+        try {
+            const { generateStandingsImage, createStandingsButtons } = require('./commands/puandurumu');
+            const buffer = await generateStandingsImage(tournament);
+            const attachment = new AttachmentBuilder(buffer, { name: 'puandurumu.png' });
+            const nowStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+            const buttonRows = createStandingsButtons(tournament.id);
+
+            const container = new ContainerBuilder()
+                .addTextDisplayComponents(
+                    new TextDisplayBuilder().setContent(`# ${tournament.emoji} ${tournament.name} — Canlı Puan Tablosu`),
+                    new TextDisplayBuilder().setContent(
+                        `FlashScore verileriyle anlık olarak çekilen resmi lig ve turnuva sıralaması:\n\n` +
+                        `${emojis.matter} **Turnuva:** **${tournament.name}**\n` +
+                        `${emojis.matter} **Kaynak:** [FlashScore Resmi Tablo](${tournament.url})\n` +
+                        `${emojis.matter} **Son Güncelleme:** Saat \`${nowStr}\`\n\n` +
+                        `*Diğer liglerin puan durumuna hızlıca geçmek için aşağıdaki butonları kullanabilirsiniz.*`
+                    )
+                )
+                .addMediaGalleryComponents(
+                    new MediaGalleryBuilder().addItems([
+                        { media: { url: 'attachment://puandurumu.png' }, description: `${tournament.name} Puan Durumu` }
+                    ])
+                )
+                .addActionRowComponents(buttonRows[0], buttonRows[1]);
+
+            return interaction.editReply({
+                files: [attachment],
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
+        } catch (err) {
+            console.error('Puan durumu buton güncelleme hatası:', err);
         }
     }
 

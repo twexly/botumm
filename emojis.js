@@ -10,7 +10,11 @@ module.exports = {
     cross: '<:cross:1545103202616090724>',          // Hata / Çarpı
     developer: '<:developer:1545103173029724310>',  // Developer / Geliştirici
     hello: '<a:hello:1541362303797301318>',         // Hoş geldin / Selam
-    superlig: '<:superlig:1548051464310755460>',    // Süper Lig logosu
+    superlig: '<:superlig:1548051464310755460>',        // Süper Lig logosu
+    premierleague: '<:premierleague:1548086673689288844>',// Premier League logosu
+    laliga: '<:laliga:1548086645818007613>',              // La Liga logosu
+    seriea: '<:seriea:1548086699505094769>',              // Serie A logosu
+    bundesliga: '<:bundesliga:1548086595234828328>',      // Bundesliga logosu
 
     // Takım Emojileri
     teams: {

@@ -1,7 +1,17 @@
-const { ContainerBuilder, TextDisplayBuilder, MediaGalleryBuilder, MessageFlags, AttachmentBuilder } = require('discord.js');
+const { 
+    ContainerBuilder, 
+    TextDisplayBuilder, 
+    MediaGalleryBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    MessageFlags, 
+    AttachmentBuilder 
+} = require('discord.js');
 const https = require('https');
 const { createCanvas, loadImage } = require('canvas');
 const emojis = require('../emojis');
+const { TOURNAMENTS, resolveTournament } = require('../data/leagues');
 
 function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
@@ -17,14 +27,13 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
     ctx.closePath();
 }
 
-// 5 dakikalık akıllı önbellek
-let cachedBuffer = null;
-let lastFetchTime = 0;
+// 5 dakikalık akıllı lig bazlı önbellek
+const standingsCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000;
 
-function fetchFlashscoreFeed() {
+function fetchFlashscoreFeed(feedCode) {
     return new Promise((resolve, reject) => {
-        const url = 'https://2.flashscore.ninja/2/x/feed/to_ABdATjMP_2TRNmxYR_1';
+        const url = 'https://2.flashscore.ninja/2/x/feed/' + feedCode;
         https.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -79,15 +88,16 @@ function fetchFlashscoreFeed() {
     });
 }
 
-async function generateStandingsImage() {
+async function generateStandingsImage(tournament) {
     const now = Date.now();
-    if (cachedBuffer && (now - lastFetchTime < CACHE_DURATION)) {
-        return cachedBuffer;
+    const cached = standingsCache.get(tournament.id);
+    if (cached && (now - cached.time < CACHE_DURATION)) {
+        return cached.buffer;
     }
 
-    const teams = await fetchFlashscoreFeed();
+    const teams = await fetchFlashscoreFeed(tournament.feedCode);
     if (!teams || teams.length === 0) {
-        throw new Error('FlashScore puan tablosu verisi alınamadı.');
+        throw new Error(`${tournament.name} puan durumu verisi alınamadı.`);
     }
 
     const width = 960;
@@ -117,11 +127,11 @@ async function generateStandingsImage() {
     ctx.font = 'bold 26px "Poppins", "Segoe UI", sans-serif';
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'left';
-    ctx.fillText('🏆 TRENDYOL SÜPER LİG', 40, 52);
+    ctx.fillText(`${tournament.flag} ${tournament.name.toUpperCase()}`, 40, 52);
 
     ctx.font = '14px "Poppins", "Segoe UI", sans-serif';
     ctx.fillStyle = '#94A3B8';
-    ctx.fillText('Resmi Güncel Puan Durumu Tablosu • FlashScore Canlı Akışı', 40, 78);
+    ctx.fillText(`Resmi Canlı Puan Durumu Tablosu • FlashScore Veri Akışı • ${tournament.shortName}`, 40, 78);
 
     // 4. Tablo Sütun Başlıkları Çubuğu
     const barY = 95;
@@ -159,24 +169,40 @@ async function generateStandingsImage() {
             ctx.fill();
         }
 
-        // Sıra Rozeti Rengi
+        // Sıra Rozeti Rengi (Turnuva Türüne Göre Akıllı Renklendirme)
         let rankColor = 'rgba(255, 255, 255, 0.1)';
         let rankTextColor = '#94A3B8';
-        if (rankNum === 1) {
-            rankColor = '#004682'; // Şampiyonlar Ligi
-            rankTextColor = '#FFFFFF';
-        } else if (rankNum === 2) {
-            rankColor = '#1EA8EC';
-            rankTextColor = '#FFFFFF';
-        } else if (rankNum === 3) {
-            rankColor = '#7F0029';
-            rankTextColor = '#FFFFFF';
-        } else if (rankNum === 4) {
-            rankColor = '#B8860B';
-            rankTextColor = '#FFFFFF';
-        } else if (rankNum >= teams.length - 2) {
-            rankColor = '#BD0000'; // Düşme Hattı
-            rankTextColor = '#FFFFFF';
+
+        if (tournament.topRankType === 'euro') {
+            // Avrupa Kupaları Yeni Lig Formatı (36 Takım)
+            if (rankNum <= 8) {
+                rankColor = '#059669'; // Doğrudan Son 16 (Yeşil)
+                rankTextColor = '#FFFFFF';
+            } else if (rankNum <= 24) {
+                rankColor = '#2563EB'; // Play-off Turu (Mavi)
+                rankTextColor = '#FFFFFF';
+            } else {
+                rankColor = '#475569'; // Elenenler (Koyu Gri)
+                rankTextColor = '#CBD5E1';
+            }
+        } else {
+            // Yerel Ligler (Süper Lig, Premier League vb.)
+            if (rankNum === 1) {
+                rankColor = '#004682'; // Şampiyonlar Ligi
+                rankTextColor = '#FFFFFF';
+            } else if (rankNum === 2) {
+                rankColor = '#1EA8EC';
+                rankTextColor = '#FFFFFF';
+            } else if (rankNum === 3) {
+                rankColor = '#7F0029';
+                rankTextColor = '#FFFFFF';
+            } else if (rankNum === 4) {
+                rankColor = '#B8860B';
+                rankTextColor = '#FFFFFF';
+            } else if (rankNum >= teams.length - 2) {
+                rankColor = '#BD0000'; // Düşme Hattı
+                rankTextColor = '#FFFFFF';
+            }
         }
 
         ctx.fillStyle = rankColor;
@@ -223,39 +249,97 @@ async function generateStandingsImage() {
     }
 
     const buffer = canvas.toBuffer('image/png');
-    cachedBuffer = buffer;
-    lastFetchTime = now;
+    standingsCache.set(tournament.id, { buffer, time: now });
     return buffer;
+}
+
+// Buton Çubuklarını Oluştur
+function createStandingsButtons(activeId) {
+    const row1 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_superlig')
+            .setLabel('Süper Lig')
+            .setEmoji('1548051464310755460')
+            .setStyle(activeId === 'superlig' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_premierleague')
+            .setLabel('Premier League')
+            .setEmoji('1548086673689288844')
+            .setStyle(activeId === 'premierleague' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_laliga')
+            .setLabel('La Liga')
+            .setEmoji('1548086645818007613')
+            .setStyle(activeId === 'laliga' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_seriea')
+            .setLabel('Serie A')
+            .setEmoji('1548086699505094769')
+            .setStyle(activeId === 'seriea' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_bundesliga')
+            .setLabel('Bundesliga')
+            .setEmoji('1548086595234828328')
+            .setStyle(activeId === 'bundesliga' ? ButtonStyle.Success : ButtonStyle.Secondary)
+    );
+
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_championsleague')
+            .setLabel('Şampiyonlar Ligi')
+            .setEmoji('⭐')
+            .setStyle(activeId === 'championsleague' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_europaleague')
+            .setLabel('Avrupa Ligi')
+            .setEmoji('🏆')
+            .setStyle(activeId === 'europaleague' ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('puandurumu_lig_conferenceleague')
+            .setLabel('Konferans Ligi')
+            .setEmoji('🏅')
+            .setStyle(activeId === 'conferenceleague' ? ButtonStyle.Success : ButtonStyle.Secondary)
+    );
+
+    return [row1, row2];
 }
 
 module.exports = {
     name: 'puandurumu',
-    aliases: ['puan', 'standings', 'ligtablosu', 'siralamalar'],
-    description: 'FlashScore üzerinden canlı Süper Lig puan durumunu çeker ve görsel tablo olarak gönderir.',
-    async execute(message, client) {
+    aliases: ['puan', 'standings', 'ligtablosu', 'siralamalar', 'puanlar'],
+    description: 'Süper Lig, Premier League, La Liga, Serie A, Bundesliga ve Şampiyonlar Ligi puan tablolarını görsel olarak gönderir.',
+    async execute(message, client, args) {
+        const query = args && args.length > 0 ? args.join(' ') : 'superlig';
+        const tournament = resolveTournament(query);
+
         const waitMsg = await message.reply({
-            content: `${emojis.settings} Güncel Süper Lig puan durumu FlashScore üzerinden alınıyor, lütfen bekleyin...`
+            content: `${emojis.settings} Güncel **${tournament.name}** puan durumu FlashScore üzerinden alınıyor, lütfen bekleyin...`
         });
 
         try {
-            const buffer = await generateStandingsImage();
+            const buffer = await generateStandingsImage(tournament);
             const attachment = new AttachmentBuilder(buffer, { name: 'puandurumu.png' });
             const nowStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
+            const buttonRows = createStandingsButtons(tournament.id);
+
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
-                    new TextDisplayBuilder().setContent(`# ${emojis.superlig} Trendyol Süper Lig — Canlı Puan Durumu`),
+                    new TextDisplayBuilder().setContent(`# ${tournament.emoji} ${tournament.name} — Canlı Puan Tablosu`),
                     new TextDisplayBuilder().setContent(
-                        `FlashScore verileriyle anlık olarak çekilen resmi lig sıralaması:\n\n` +
-                        `${emojis.matter} **Kaynak:** [FlashScore Süper Lig](https://www.flashscore.com/football/turkey/super-lig/standings/2TRNmxYR/standings/overall/)\n` +
-                        `${emojis.matter} **Son Güncelleme:** Saat \`${nowStr}\``
+                        `FlashScore verileriyle anlık olarak çekilen resmi lig ve turnuva sıralaması:\n\n` +
+                        `${emojis.matter} **Turnuva:** **${tournament.name}**\n` +
+                        `${emojis.matter} **Kaynak:** [FlashScore Resmi Tablo](${tournament.url})\n` +
+                        `${emojis.matter} **Son Güncelleme:** Saat \`${nowStr}\`\n\n` +
+                        `*Diğer liglerin puan durumuna hızlıca geçmek için aşağıdaki butonları kullanabilirsiniz.*`
                     )
                 )
                 .addMediaGalleryComponents(
                     new MediaGalleryBuilder().addItems([
-                        { media: { url: 'attachment://puandurumu.png' }, description: 'Süper Lig Puan Durumu' }
+                        { media: { url: 'attachment://puandurumu.png' }, description: `${tournament.name} Puan Durumu` }
                     ])
-                );
+                )
+                .addActionRowComponents(buttonRows[0], buttonRows[1]);
 
             await waitMsg.delete().catch(() => {});
 
@@ -268,8 +352,10 @@ module.exports = {
         } catch (err) {
             console.error('Puan durumu alma hatası:', err);
             await waitMsg.edit({
-                content: `${emojis.cross} Puan durumu tablosu hazırlanırken bir hata oluştu: \`${err.message}\``
+                content: `${emojis.cross} **${tournament.name}** puan durumu tablosu hazırlanırken bir hata oluştu: \`${err.message}\``
             }).catch(() => {});
         }
-    }
+    },
+    generateStandingsImage,
+    createStandingsButtons
 };

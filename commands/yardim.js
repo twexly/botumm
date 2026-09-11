@@ -242,9 +242,9 @@ module.exports = {
                     `• **\`.zenginler\`** : Sunucunun en zengin 10 üyesini listeler`
                 ),
                 new TextDisplayBuilder().setContent(
-                    `### ${emojis.superlig} Süper Lig & Futbol\n` +
-                    `• **\`.superlig\`** : Süper Lig takım rollerini oluşturur ve seçim menüsünü gönderir\n` +
-                    `• **\`.puandurumu\`** : FlashScore üzerinden canlı Süper Lig puan durumu tablosunu çeker`
+                    `### ⚽ Futbol & Lig Sistemleri\n` +
+                    `• **\`.takimsec\`** : Süper Lig ve 4 büyük Avrupa ligi için interaktif takım seçim panelini kurar\n` +
+                    `• **\`.puandurumu <lig>\`** : Süper Lig, Premier League, La Liga, Serie A, Bundesliga ve Şampiyonlar Ligi puan tablolarını çeker`
                 )
             );
 
@@ -284,8 +284,8 @@ module.exports = {
                             value: '`bakiye`, `günlük`, `çalış`, `soygun`, `transfer`, `slot`, `blackjack`, `yazıtura`, `zenginler`'
                         },
                         {
-                            name: '⚽ Süper Lig',
-                            value: '`superlig`, `puandurumu`'
+                            name: '⚽ Futbol & Ligler',
+                            value: '`takimsec`, `puandurumu`'
                         }
                     );
                 const bannerBuffer = generateHelpBanner();
