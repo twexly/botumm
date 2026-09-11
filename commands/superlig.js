@@ -31,31 +31,10 @@ module.exports = {
             });
         }
 
-        const waitMsg = await message.reply({
-            content: `${emojis.settings} Süper Lig takım rolleri kontrol ediliyor ve hazırlanıyor, lütfen bekleyin...`
-        });
+        // Komut mesajını temizle (varsa)
+        await message.delete().catch(() => {});
 
-        // 1. Rolleri kontrol et ve yoksa otomatik oluştur
-        const guildRoles = await message.guild.roles.fetch();
-        let createdCount = 0;
-
-        for (const team of SUPER_LIG_TEAMS) {
-            const exists = guildRoles.some(r => r.name.toLowerCase() === team.name.toLowerCase());
-            if (!exists) {
-                try {
-                    await message.guild.roles.create({
-                        name: team.name,
-                        color: team.color,
-                        reason: 'Süper Lig Takım Seçim Sistemi'
-                    });
-                    createdCount++;
-                } catch (err) {
-                    console.error(`Rol oluşturulamadı (${team.name}):`, err.message);
-                }
-            }
-        }
-
-        // 2. Select Menu Seçeneklerini Oluştur
+        // 1. Select Menu Seçeneklerini Oluştur
         const options = SUPER_LIG_TEAMS.map(team => ({
             label: team.name,
             value: team.id || `sl_${team.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
@@ -70,7 +49,7 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
 
-        // 3. Components V2 Container
+        // 2. Components V2 Container
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent('# ⚽ Süper Lig Takım Seçim Paneli'),
@@ -86,12 +65,67 @@ module.exports = {
             .addSeparatorComponents(new SeparatorBuilder())
             .addActionRowComponents(row);
 
-        await waitMsg.delete().catch(() => {});
+        // 3. Paneli Anında Gönder (Çok Kademeli Güvenli Fallback)
+        try {
+            await message.channel.send({
+                components: [container],
+                flags: MessageFlags.IsComponentsV2
+            });
+        } catch (err) {
+            console.error("Components V2 gönderme hatası, klasik ActionRow deneniyor:", err);
+            try {
+                await message.channel.send({
+                    content: `# ⚽ Süper Lig Takım Seçim Paneli\n\n` +
+                        `Aşağıdaki açılır menüyü kullanarak tuttuğun takımı seçebilir ve sunucudaki takım rolünü anında alabilirsin!\n\n` +
+                        `${emojis.matter} **Nasıl Çalışır?**\n` +
+                        `• Menüden takımını seçtiğinde bot otomatik olarak takım rolünü verir.\n` +
+                        `• Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.\n` +
+                        `• Takımını istediğin zaman değiştirebilirsin.\n\n` +
+                        `> *Tribündeki yerini al, takımını gururla temsil et!*`,
+                    components: [row]
+                });
+            } catch (fallbackErr) {
+                console.error("Özel emojili menü hatası, sade menü deneniyor:", fallbackErr);
+                const plainOptions = SUPER_LIG_TEAMS.map(team => ({
+                    label: team.name,
+                    value: team.id || `sl_${team.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+                    description: team.desc
+                }));
+                const plainMenu = new StringSelectMenuBuilder()
+                    .setCustomId('superlig_takim_sec')
+                    .setPlaceholder('⚽ Desteklediğin Süper Lig takımını seç...')
+                    .addOptions(plainOptions);
+                const plainRow = new ActionRowBuilder().addComponents(plainMenu);
+                await message.channel.send({
+                    content: `# ⚽ Süper Lig Takım Seçim Paneli\n\n` +
+                        `Aşağıdaki açılır menüyü kullanarak tuttuğun takımı seçebilir ve sunucudaki takım rolünü anında alabilirsin!\n\n` +
+                        `• Menüden takımını seçtiğinde bot otomatik olarak takım rolünü verir.\n` +
+                        `• Başka bir takım seçersen eski takım rolün otomatik olarak kaldırılır.\n` +
+                        `• Takımını istediğin zaman değiştirebilirsin.\n\n` +
+                        `> *Tribündeki yerini al, takımını gururla temsil et!*`,
+                    components: [plainRow]
+                });
+            }
+        }
 
-        return message.channel.send({
-            components: [container],
-            flags: MessageFlags.IsComponentsV2
-        });
+        // 4. Arka planda eksik rolleri güvenle ve sessizce oluştur (Kullanıcıyı asla bekletmez)
+        (async () => {
+            try {
+                const guildRoles = await message.guild.roles.fetch().catch(() => null);
+                if (!guildRoles) return;
+                for (const team of SUPER_LIG_TEAMS) {
+                    const exists = guildRoles.some(r => r.name.toLowerCase() === team.name.toLowerCase());
+                    if (!exists) {
+                        await message.guild.roles.create({
+                            name: team.name,
+                            color: team.color,
+                            reason: 'Süper Lig Takım Seçim Sistemi'
+                        }).catch(() => {});
+                        await new Promise(res => setTimeout(res, 1200)); // Discord rate limit koruması
+                    }
+                }
+            } catch (e) {}
+        })();
     },
     SUPER_LIG_TEAMS
 };
