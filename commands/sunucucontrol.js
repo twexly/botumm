@@ -78,11 +78,10 @@ module.exports = {
     description: 'Kanal silme, toplu kanal/rol oluşturma ve sıfırlama araçları sunar.',
     getControlPanelMenu,
 
-    // Botunun ana messageCreate dinleyicisinden doğrudan çağrılması için:
-    async run(message, client, args) {
+    // Botunun ana index.js dosyan 'command.execute' aradığı için burası 'execute' olarak düzeltildi!
+    async execute(message, client, args) {
         if (!message.guild) return;
 
-        // Yetki kontrolü (Yönetici değilse engelle)
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return message.reply({
                 content: `❌ Bu komutu sadece **Yönetici** yetkisine sahip kullanıcılar kullanabilir.`
