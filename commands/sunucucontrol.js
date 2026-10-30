@@ -18,17 +18,17 @@ function getControlPanelMenu(guildName) {
 
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_create_channels')
+            .setCustomId('scontrol_create_channels')
             .setLabel('Toplu Kanal Oluştur')
             .setEmoji('📁')
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_create_roles')
+            .setCustomId('scontrol_create_roles')
             .setLabel('Toplu Rol Oluştur')
             .setEmoji('🛡️')
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_rename_server')
+            .setCustomId('scontrol_rename_server')
             .setLabel('Sunucu Adını Değiştir')
             .setEmoji('✏️')
             .setStyle(ButtonStyle.Primary)
@@ -36,17 +36,17 @@ function getControlPanelMenu(guildName) {
 
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_delete_channels')
+            .setCustomId('scontrol_delete_channels')
             .setLabel('Tüm Kanalları Sil')
             .setEmoji('🗑️')
             .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_delete_roles')
+            .setCustomId('scontrol_delete_roles')
             .setLabel('Yönetici Olmayan Rolleri Sil')
             .setEmoji('🔥')
             .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_nuke_server')
+            .setCustomId('scontrol_nuke_server')
             .setLabel('Hızlı Sunucu Sıfırla (Nuke)')
             .setEmoji('☢️')
             .setStyle(ButtonStyle.Danger)
@@ -54,17 +54,17 @@ function getControlPanelMenu(guildName) {
 
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_stats')
+            .setCustomId('scontrol_stats')
             .setLabel('Sunucu İstatistikleri')
             .setEmoji('📊')
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_lockdown')
+            .setCustomId('scontrol_lockdown')
             .setLabel('Sunucu Kilidi (Lockdown)')
             .setEmoji('🔒')
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
-            .setCustomId('scontrol_btn_unlockdown')
+            .setCustomId('scontrol_unlockdown')
             .setLabel('Kilidi Kaldır')
             .setEmoji('🔓')
             .setStyle(ButtonStyle.Secondary)
@@ -77,13 +77,12 @@ module.exports = {
     name: 'sunucucontrol',
     aliases: ['sunucuyonet', 'scontrol', 'sc'],
     modOnly: true,
-    description: 'Kanal silme, toplu kanal/rol oluşturma, sunucu kilitleme ve sıfırlama gibi 10+ farklı yönetim aracı sunar.',
+    description: 'Kanal silme, toplu kanal/rol oluşturma, sunucu kilitleme ve sıfırlama gibi yönetim araçları sunar.',
     getControlPanelMenu,
 
     async execute(message, client, args) {
         if (!message.guild) return;
 
-        // Yetki kontrolü (Botun ve kullanıcının yetkileri)
         if (!client.isModerator(message.member) && !message.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return message.reply({
                 content: `${emojis.cross || '❌'} Bu komutu yalnızca **Yönetici** veya yetkili rolüne sahip kullanıcılar kullanabilir.`
@@ -94,15 +93,14 @@ module.exports = {
         return message.reply(panel);
     },
 
-    // Buton ve Etkileşim Yöneticisi (Interaction Handler - Botun ana interaction dinleyicisine entegre edilebilir)
     async handleInteraction(interaction, client) {
         if (!interaction.isButton() && !interaction.isModalSubmit()) return;
 
         if (interaction.customId.startsWith('scontrol_')) {
-            const action = interaction.customId.replace('scontrol_', '');
+            const action = interaction.customId;
 
             // 1. Sunucu Adını Değiştirme Modalı
-            if (action === 'btn_rename_server') {
+            if (action === 'scontrol_rename_server') {
                 const modal = new ModalBuilder()
                     .setCustomId('scontrol_modal_rename')
                     .setTitle('Sunucu Adını Güncelle');
@@ -120,7 +118,7 @@ module.exports = {
             }
 
             // 2. Toplu Kanal Oluşturma Modalı
-            if (action === 'btn_create_channels') {
+            if (action === 'scontrol_create_channels') {
                 const modal = new ModalBuilder()
                     .setCustomId('scontrol_modal_channels')
                     .setTitle('Toplu Kanal Oluşturucu');
@@ -136,8 +134,25 @@ module.exports = {
                 return await interaction.showModal(modal);
             }
 
-            // 3. Kanalları Silme İşlemi
-            if (action === 'btn_delete_channels') {
+            // 3. Toplu Rol Oluşturma Modalı
+            if (action === 'scontrol_create_roles') {
+                const modal = new ModalBuilder()
+                    .setCustomId('scontrol_modal_roles')
+                    .setTitle('Toplu Rol Oluşturucu');
+
+                const roleInput = new TextInputBuilder()
+                    .setCustomId('role_name_list')
+                    .setLabel('Rol İsimleri (Virgül ile ayırın)')
+                    .setPlaceholder('Kurucu, Yönetici, Moderator, Üye')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true);
+
+                modal.addComponents(new ActionRowBuilder().addComponents(roleInput));
+                return await interaction.showModal(modal);
+            }
+
+            // 4. Kanalları Silme İşlemi
+            if (action === 'scontrol_delete_channels') {
                 if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
                     return interaction.reply({ content: '❌ Bu işlem için **Kanalları Yönet** yetkiniz olmalı.', ephemeral: true });
                 }
@@ -157,8 +172,8 @@ module.exports = {
                 return interaction.followUp({ content: `✅ Başarıyla **${deletedCount}** kanal silindi!`, ephemeral: true });
             }
 
-            // 4. Rolleri Silme İşlemi (Yönetici ve bot rollerini korur)
-            if (action === 'btn_delete_roles') {
+            // 5. Rolleri Silme İşlemi
+            if (action === 'scontrol_delete_roles') {
                 if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
                     return interaction.reply({ content: '❌ Bu işlem için **Rolleri Yönet** yetkiniz olmalı.', ephemeral: true });
                 }
@@ -168,21 +183,21 @@ module.exports = {
                 let deletedRoles = 0;
                 for (const [id, role] of interaction.guild.roles.cache) {
                     if (role.managed || role.position >= interaction.guild.members.me.roles.highest.position || role.permissions.has(PermissionFlagsBits.Administrator)) {
-                        continue; // Bot rolleri, üst roller ve admin rollerini koru
+                        continue;
                     }
                     try {
                         await role.delete();
                         deletedRoles++;
                     } catch (err) {
-                        console.error(` Rol silinemedi (${role.name}):`, err);
+                        console.error(`Rol silinemedi (${role.name}):`, err);
                     }
                 }
 
                 return interaction.followUp({ content: `✅ Toplam **${deletedRoles}** standart rol başarıyla silindi!`, ephemeral: true });
             }
 
-            // 5. Sunucu İstatistikleri
-            if (action === 'btn_stats') {
+            // 6. Sunucu İstatistikleri
+            if (action === 'scontrol_stats') {
                 const guild = interaction.guild;
                 const statsMsg = `📊 **Sunucu İstatistikleri — ${guild.name}**\n\n` +
                     `• **Toplam Üye:** ${guild.memberCount}\n` +
@@ -194,9 +209,9 @@ module.exports = {
                 return interaction.reply({ content: statsMsg, ephemeral: true });
             }
 
-            // 6. Sunucu Kilidi (Lockdown - @everyone mesaj göndermesini kapatır)
-            if (action === 'btn_lockdown' || action === 'btn_unlockdown') {
-                const isLock = action === 'btn_lockdown';
+            // 7. Sunucu Kilidi (Lockdown)
+            if (action === 'scontrol_lockdown' || action === 'scontrol_unlockdown') {
+                const isLock = action === 'scontrol_lockdown';
                 await interaction.update({ content: `⏳ Sunucu genel kanalları ${isLock ? 'kilitleniyor' : 'açılıyor'}...`, components: [] });
 
                 let updatedChannels = 0;
@@ -216,8 +231,8 @@ module.exports = {
                 return interaction.followUp({ content: `✅ Sunucu başarıyla ${isLock ? 'kilitlendi 🔒' : 'açıldı 🔓'} (${updatedChannels} kanal güncellendi).`, ephemeral: true });
             }
 
-            // 7. Hızlı Sunucu Sıfırlama (Nuke)
-            if (action === 'btn_nuke_server') {
+            // 8. Hızlı Sunucu Sıfırlama (Nuke)
+            if (action === 'scontrol_nuke_server') {
                 const confirmRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId('scontrol_confirm_nuke_yes').setLabel('EVET, HER ŞEYİ SIFIRLA').setStyle(ButtonStyle.Danger),
                     new ButtonBuilder().setCustomId('scontrol_confirm_nuke_no').setLabel('İptal Et').setStyle(ButtonStyle.Secondary)
@@ -230,13 +245,11 @@ module.exports = {
                 });
             }
 
-            if (action === 'confirm_nuke_yes') {
+            if (action === 'scontrol_confirm_nuke_yes') {
                 await interaction.update({ content: '☢️ Sunucu sıfırlama işlemi başlatıldı...', components: [] });
-                // Tüm kanalları sil
                 for (const [id, channel] of interaction.guild.channels.cache) {
                     try { await channel.delete(); } catch (e) {}
                 }
-                // Varsayılan bir kanal aç
                 const defaultChan = await interaction.guild.channels.create({
                     name: 'genel-sohbet',
                     type: ChannelType.GuildText
@@ -244,7 +257,7 @@ module.exports = {
                 return defaultChan.send('🎉 Sunucu başarıyla sıfırlandı ve temizlendi!');
             }
 
-            if (action === 'confirm_nuke_no') {
+            if (action === 'scontrol_confirm_nuke_no') {
                 return interaction.update({ content: '❌ İşlem iptal edildi.', components: [] });
             }
         }
@@ -285,6 +298,32 @@ module.exports = {
                 }
 
                 return interaction.followUp({ content: `✅ Toplam **${createdCount}/${channelNames.length}** kanal başarıyla oluşturuldu!`, ephemeral: true });
+            }
+
+            if (interaction.customId === 'scontrol_modal_roles') {
+                const rawRoles = interaction.fields.getTextInputValue('role_name_list');
+                const roleNames = rawRoles.split(',').map(n => n.trim()).filter(n => n.length > 0);
+
+                if (roleNames.length === 0) {
+                    return interaction.reply({ content: '❌ Geçerli bir rol ismi girilmedi.', ephemeral: true });
+                }
+
+                await interaction.reply({ content: `⏳ Toplam **${roleNames.length}** adet rol oluşturuluyor...`, ephemeral: true });
+
+                let createdCount = 0;
+                for (const roleName of roleNames) {
+                    try {
+                        await interaction.guild.roles.create({
+                            name: roleName,
+                            reason: 'Toplu rol oluşturma aracı ile eklendi.'
+                        });
+                        createdCount++;
+                    } catch (err) {
+                        console.error(`Rol oluşturulamadı (${roleName}):`, err);
+                    }
+                }
+
+                return interaction.followUp({ content: `✅ Toplam **${createdCount}/${roleNames.length}** rol başarıyla oluşturuldu!`, ephemeral: true });
             }
         }
     }
